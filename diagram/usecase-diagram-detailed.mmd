@@ -1,0 +1,141 @@
+graph TD
+    %% Actors
+    User(["👤 User"]):::actor
+    AI(["🤖 AI Assistant"]):::actor
+    Firebase(["🔥 Firebase"]):::actor
+    Gemini(["✨ Gemini AI"]):::actor
+
+    %% System boundary
+    subgraph PCBuildApp["🖥️ PC Build App System"]
+        direction TB
+        
+        %% Authentication Use Cases
+        subgraph Auth["🔐 Authentication"]
+            UC1((Register Account))
+            UC2((Login))
+            UC3((Logout))
+            UC4((Manage Profile))
+        end
+        
+        %% PC Building Use Cases
+        subgraph Building["🔧 PC Building"]
+            UC5((Browse PC Parts))
+            UC6((Filter Parts))
+            UC7((Search Parts))
+            UC8((Sort Parts))
+            UC9((Select Component))
+            UC10((Build Configuration))
+            UC11((Check Compatibility))
+            UC12((Calculate Total Price))
+            UC13((Save Build))
+            UC14((Load Build))
+            UC15((Update Build))
+            UC16((Delete Build))
+        end
+        
+        %% AI Analysis Use Cases
+        subgraph AIAnalysis["🧠 AI Analysis"]
+            UC17((Analyze Build Performance))
+            UC18((Check Build Compatibility))
+            UC19((Calculate Power Consumption))
+            UC20((Evaluate Price Efficiency))
+            UC21((Generate Recommendations))
+            UC22((AI Chat Assistant))
+        end
+        
+        %% Social Features Use Cases
+        subgraph Social["👥 Social Features"]
+            UC23((Create Post))
+            UC24((View All Posts))
+            UC25((View My Posts))
+            UC26((Edit Post))
+            UC27((Delete Post))
+            UC28((Comment on Post))
+            UC29((Vote on Post))
+            UC30((View Post Details))
+            UC31((Share Build))
+        end
+        
+        %% Data Management Use Cases
+        subgraph Data["💾 Data Management"]
+            UC32((Store User Data))
+            UC33((Store Build Configs))
+            UC34((Store Posts))
+            UC35((Store Comments))
+            UC36((Store Votes))
+            UC37((Load Component Data))
+            UC38((Manage Images))
+        end
+    end
+
+    %% User Relationships
+    User --> UC1
+    User --> UC2
+    User --> UC3
+    User --> UC4
+    User --> UC5
+    User --> UC6
+    User --> UC7
+    User --> UC8
+    User --> UC9
+    User --> UC10
+    User --> UC11
+    User --> UC12
+    User --> UC13
+    User --> UC14
+    User --> UC15
+    User --> UC16
+    User --> UC23
+    User --> UC24
+    User --> UC25
+    User --> UC26
+    User --> UC27
+    User --> UC28
+    User --> UC29
+    User --> UC30
+    User --> UC31
+    User --> UC22
+
+    %% AI Assistant Relationships
+    AI --> UC17
+    AI --> UC18
+    AI --> UC19
+    AI --> UC20
+    AI --> UC21
+    
+    %% Gemini AI Relationships
+    Gemini --> UC22
+
+    %% Firebase Relationships
+    Firebase --> UC32
+    Firebase --> UC33
+    Firebase --> UC34
+    Firebase --> UC35
+    Firebase --> UC36
+    Firebase --> UC37
+    Firebase --> UC38
+
+    %% Include Relationships (dotted arrows)
+    UC10 -.->|includes| UC11
+    UC10 -.->|includes| UC12
+    UC13 -.->|includes| UC11
+    UC23 -.->|includes| UC10
+    UC17 -.->|includes| UC11
+    UC17 -.->|includes| UC19
+    UC17 -.->|includes| UC20
+
+    %% Extend Relationships (dashed arrows)
+    UC21 -.-|extends| UC17
+    UC22 -.-|extends| UC10
+    UC31 -.-|extends| UC13
+
+    %% Styling
+    classDef actor fill:#e1f5fe,stroke:#01579b,stroke-width:3px,color:#000
+    classDef usecase fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,color:#000
+    classDef system fill:#e8f5e8,stroke:#1b5e20,stroke-width:3px,color:#000
+    classDef subsystem fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#000
+
+    %% Apply styles
+    class UC1,UC2,UC3,UC4,UC5,UC6,UC7,UC8,UC9,UC10,UC11,UC12,UC13,UC14,UC15,UC16,UC17,UC18,UC19,UC20,UC21,UC22,UC23,UC24,UC25,UC26,UC27,UC28,UC29,UC30,UC31,UC32,UC33,UC34,UC35,UC36,UC37,UC38 usecase
+    class PCBuildApp system
+    class Auth,Building,AIAnalysis,Social,Data subsystem

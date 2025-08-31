@@ -1,0 +1,84 @@
+---
+title: Build Tab - Flowchart
+---
+flowchart TD
+    Start([User opens Build Tab])
+    
+    InitBuild[Initialize empty build]
+    ShowCategories[Show component categories<br/>- CPU<br/>- Memory<br/>- Motherboard<br/>- Video Card<br/>- Case<br/>- Power Supply<br/>- Storage<br/>- Monitor]
+    
+    UserSelect{User selects category}
+    
+    LoadParts[Load parts for category]
+    ShowFilters[Show filters<br/>- Price range<br/>- Manufacturer<br/>- Specifications]
+    
+    FilterApplied{Filters applied?}
+    FilterParts[Filter parts list]
+    ShowParts[Display parts list]
+    
+    SelectPart{User selects part?}
+    AddToBuild[Add part to build]
+    CheckCompatibility[Check compatibility<br/>- CPU/Motherboard socket<br/>- Power requirements]
+    
+    Compatible{Compatible?}
+    ShowWarning[Show compatibility warning]
+    UpdateBuild[Update build configuration]
+    
+    CalculatePrice[Calculate total price]
+    ShowSummary[Show build summary]
+    
+    UserAction{User action}
+    
+    %% Actions
+    SaveBuild[Save build to database]
+    ShareBuild[Create post to share]
+    AnalyzeAI[Get AI analysis]
+    ChatAI[Open AI chat]
+    ClearBuild[Clear current build]
+    
+    %% AI Analysis
+    ShowAnalysis[Show AI analysis<br/>- Performance score<br/>- Compatibility check<br/>- Power consumption<br/>- Recommendations]
+    
+    End([End])
+    
+    Start --> InitBuild
+    InitBuild --> ShowCategories
+    ShowCategories --> UserSelect
+    
+    UserSelect --> LoadParts
+    LoadParts --> ShowFilters
+    ShowFilters --> FilterApplied
+    
+    FilterApplied -->|Yes| FilterParts
+    FilterApplied -->|No| ShowParts
+    FilterParts --> ShowParts
+    
+    ShowParts --> SelectPart
+    SelectPart -->|Yes| AddToBuild
+    SelectPart -->|No| UserAction
+    
+    AddToBuild --> CheckCompatibility
+    CheckCompatibility --> Compatible
+    
+    Compatible -->|No| ShowWarning
+    Compatible -->|Yes| UpdateBuild
+    ShowWarning --> UpdateBuild
+    
+    UpdateBuild --> CalculatePrice
+    CalculatePrice --> ShowSummary
+    ShowSummary --> UserAction
+    
+    UserAction -->|Save| SaveBuild
+    UserAction -->|Share| ShareBuild
+    UserAction -->|AI Analysis| AnalyzeAI
+    UserAction -->|AI Chat| ChatAI
+    UserAction -->|Clear| ClearBuild
+    UserAction -->|Select More| ShowCategories
+    
+    AnalyzeAI --> ShowAnalysis
+    ShowAnalysis --> End
+    
+    SaveBuild --> End
+    ShareBuild --> End
+    ChatAI --> End
+    ClearBuild --> InitBuild

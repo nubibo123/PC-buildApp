@@ -1,0 +1,90 @@
+---
+title: Saved Builds Tab - Flowchart
+---
+flowchart TD
+    Start([User opens Saved Builds Tab])
+    
+    CheckAuth{User authenticated?}
+    RedirectLogin[Redirect to Login]
+    
+    LoadSavedBuilds[Load user's saved builds]
+    
+    HasBuilds{Has saved builds?}
+    ShowEmpty[Show empty state<br/>"No saved builds yet"<br/>+ Link to Build tab]
+    
+    DisplayBuilds[Display builds grid<br/>- Build thumbnail<br/>- Build name<br/>- Total price<br/>- Created date<br/>- Component count]
+    
+    ShowSortFilter[Show sort/filter options<br/>- Sort by: Date, Price, Name<br/>- Filter by: Price range]
+    
+    UserAction{User action}
+    
+    %% Build Actions
+    SelectBuild[Select specific build]
+    ViewBuildDetail[View build details<br/>- All components<br/>- Specifications<br/>- Compatibility status<br/>- AI analysis]
+    
+    BuildDetailAction{Build detail action}
+    
+    EditBuild[Edit build configuration]
+    DeleteBuild[Delete build]
+    DuplicateBuild[Create copy of build]
+    ShareBuild[Share as community post]
+    ExportBuild[Export build specs]
+    
+    %% Confirmation dialogs
+    ConfirmDelete{Confirm delete?}
+    ConfirmShare{Add post details?}
+    
+    PerformDelete[Remove from saved builds]
+    CreatePost[Create post with build]
+    
+    %% Filters and Sorting
+    ApplySort[Apply sort option]
+    ApplyFilter[Apply price filter]
+    RefreshList[Refresh builds list]
+    
+    End([End])
+    
+    Start --> CheckAuth
+    CheckAuth -->|No| RedirectLogin
+    CheckAuth -->|Yes| LoadSavedBuilds
+    RedirectLogin --> End
+    
+    LoadSavedBuilds --> HasBuilds
+    HasBuilds -->|No| ShowEmpty
+    HasBuilds -->|Yes| DisplayBuilds
+    ShowEmpty --> End
+    
+    DisplayBuilds --> ShowSortFilter
+    ShowSortFilter --> UserAction
+    
+    UserAction -->|Select Build| SelectBuild
+    UserAction -->|Sort| ApplySort
+    UserAction -->|Filter| ApplyFilter
+    UserAction -->|Refresh| RefreshList
+    UserAction -->|Exit| End
+    
+    SelectBuild --> ViewBuildDetail
+    ViewBuildDetail --> BuildDetailAction
+    
+    BuildDetailAction -->|Edit| EditBuild
+    BuildDetailAction -->|Delete| ConfirmDelete
+    BuildDetailAction -->|Duplicate| DuplicateBuild
+    BuildDetailAction -->|Share| ConfirmShare
+    BuildDetailAction -->|Export| ExportBuild
+    BuildDetailAction -->|Back| DisplayBuilds
+    
+    ConfirmDelete -->|Yes| PerformDelete
+    ConfirmDelete -->|No| ViewBuildDetail
+    PerformDelete --> LoadSavedBuilds
+    
+    ConfirmShare -->|Yes| CreatePost
+    ConfirmShare -->|No| ViewBuildDetail
+    CreatePost --> End
+    
+    EditBuild --> End
+    DuplicateBuild --> End
+    ExportBuild --> End
+    
+    ApplySort --> RefreshList
+    ApplyFilter --> RefreshList
+    RefreshList --> DisplayBuilds

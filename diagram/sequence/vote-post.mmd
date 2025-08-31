@@ -1,0 +1,30 @@
+---
+title: Vote on Post - Sequence Diagram
+---
+sequenceDiagram
+    participant User
+    participant UI as Post UI
+    participant Auth as AuthContext
+    participant VoteService
+    participant Firebase as Firebase DB
+
+    User->>UI: Click vote button
+    UI->>Auth: getCurrentUser()
+    Auth->>UI: Return user data
+    alt User not authenticated
+        UI->>User: Redirect to login
+    else User authenticated
+        UI->>VoteService: toggleVote(postId, voteType)
+        VoteService->>Firebase: Check existing vote
+        Firebase->>VoteService: Return vote status
+        alt Already voted same type
+            VoteService->>Firebase: Remove vote
+            Firebase->>VoteService: Confirm removal
+            VoteService->>UI: Update vote count
+        else Different vote or no vote
+            VoteService->>Firebase: Save/update vote
+            Firebase->>VoteService: Confirm vote
+            VoteService->>UI: Update vote count
+        end
+        UI->>User: Update UI with new vote state
+    end

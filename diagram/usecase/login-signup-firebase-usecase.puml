@@ -1,0 +1,23 @@
+@startuml
+!theme plain
+left to right direction
+
+actor User
+rectangle "App" {
+  (Login)
+  (Sign Up)
+  (Logout)
+}
+rectangle "Firebase" {
+  (Auth)
+}
+
+User --> (Login)
+User --> (Sign Up)
+User --> (Logout)
+
+(Login) --> (Auth) : authenticate
+(Sign Up) --> (Auth) : create account
+(Logout) --> (Auth) : sign out
+
+@enduml

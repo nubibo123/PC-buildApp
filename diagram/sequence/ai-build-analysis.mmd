@@ -1,0 +1,31 @@
+---
+title: AI Build Analysis - Sequence Diagram
+---
+sequenceDiagram
+    participant User
+    participant UI as Build UI
+    participant AIService as AI Analyst Service
+    participant BuildService
+    participant GeminiAPI as Gemini AI
+
+    User->>UI: Request AI analysis
+    UI->>AIService: analyzeBuildConfiguration(buildConfig)
+    AIService->>BuildService: validateBuildConfig()
+    BuildService->>AIService: Return validation result
+    
+    alt Invalid build config
+        AIService->>UI: Return error message
+        UI->>User: Show validation error
+    else Valid build config
+        AIService->>AIService: calculatePerformanceScore()
+        AIService->>AIService: checkCompatibility()
+        AIService->>AIService: calculatePowerConsumption()
+        AIService->>AIService: evaluatePriceEfficiency()
+        
+        AIService->>GeminiAPI: getAIRecommendations(config)
+        GeminiAPI->>AIService: Return AI insights
+        
+        AIService->>AIService: compileAnalysisResult()
+        AIService->>UI: Return complete analysis
+        UI->>User: Display analysis results
+    end

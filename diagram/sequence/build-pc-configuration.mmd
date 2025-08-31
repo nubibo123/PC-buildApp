@@ -1,0 +1,39 @@
+---
+title: Build PC Configuration - Sequence Diagram
+---
+sequenceDiagram
+    participant User
+    participant UI as Build UI
+    participant BuildService
+    participant CSVData as CSV Data
+    participant SocketUtils
+    participant AIService as AI Analyst
+
+    User->>UI: Start building PC
+    UI->>BuildService: initializeBuild()
+    BuildService->>UI: Return empty build config
+    
+    loop For each component type
+        User->>UI: Select component category
+        UI->>BuildService: getComponentsByType()
+        BuildService->>CSVData: loadComponentData()
+        CSVData->>BuildService: Return components list
+        BuildService->>UI: Display components
+        User->>UI: Select component
+        UI->>SocketUtils: checkCompatibility()
+        SocketUtils->>UI: Return compatibility status
+        alt Compatible
+            UI->>BuildService: addComponentToBuild()
+            BuildService->>BuildService: calculateTotalPrice()
+            BuildService->>UI: Update build summary
+        else Incompatible
+            UI->>User: Show compatibility warning
+        end
+    end
+    
+    User->>UI: Request AI analysis
+    UI->>AIService: analyzeBuildConfiguration()
+    AIService->>BuildService: getBuildConfig()
+    BuildService->>AIService: Return config
+    AIService->>UI: Return analysis results
+    UI->>User: Display AI recommendations

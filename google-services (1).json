@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "636642925982",
+    "firebase_url": "https://tttt-ed355-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "tttt-ed355",
+    "storage_bucket": "tttt-ed355.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:636642925982:android:52bad232bfd3bc75e08a8f",
+        "android_client_info": {
+          "package_name": "com.example.PCRec"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAnieduPd1HS2uMr0_bpTQk8VO1zU9hxf8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

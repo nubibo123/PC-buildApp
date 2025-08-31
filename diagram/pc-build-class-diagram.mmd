@@ -1,0 +1,203 @@
+---
+title: PC Build App - Class Diagram
+---
+classDiagram
+direction TB
+    class User {
+	    +string uid
+	    +string email
+	    +string displayName
+	    +string photoURL
+	    +register()
+	    +login()
+	    +logout()
+	    +updateProfile()
+    }
+    class AuthContext {
+	    +User user
+	    +boolean loading
+	    +signIn(email, password)
+	    +signUp(email, password)
+	    +signOut()
+	    +getCurrentUser()
+    }
+    class CPU {
+	    +string name
+	    +number price
+	    +number coreCount
+	    +number threadCount
+	    +number coreClock
+	    +number boostClock
+	    +number tdp
+	    +string microarchitecture
+	    +string graphics
+	    +string linkImage
+	    +string manufacturer
+	    +string series
+    }
+    class Memory {
+	    +string name
+	    +number price
+	    +string speed
+	    +string modules
+	    +number casLatency
+	    +string imageLink
+    }
+    class Motherboard {
+	    +string name
+	    +number price
+	    +string socket
+	    +string formFactor
+	    +number maxMemory
+	    +string imageLink
+    }
+    class VideoCard {
+	    +string name
+	    +number price
+	    +string chipset
+	    +number memory
+	    +number coreClock
+	    +string imageLink
+    }
+    class Case {
+	    +string name
+	    +number price
+	    +string type
+	    +string color
+	    +string imageLink
+    }
+    class PowerSupply {
+	    +string name
+	    +number price
+	    +number wattage
+	    +string efficiency
+	    +string modular
+	    +string imageLink
+    }
+    class InternalHardDrive {
+	    +string name
+	    +number price
+	    +number capacity
+	    +string type
+	    +string formFactor
+	    +string imageLink
+    }
+    class Monitor {
+	    +string name
+	    +number price
+	    +string screenSize
+	    +string resolution
+	    +number refreshRate
+	    +string imageLink
+    }
+    class BuildConfiguration {
+	    +CPU cpu
+	    +Memory memory
+	    +Motherboard motherboard
+	    +VideoCard videoCard
+	    +Case case
+	    +PowerSupply powerSupply
+	    +InternalHardDrive internalHardDrive
+	    +Monitor monitor
+	    +calculateTotalPrice()
+	    +checkCompatibility()
+    }
+    class SavedBuild {
+	    +string id
+	    +string userId
+	    +UserProfile userProfile
+	    +BuildConfiguration config
+	    +number totalPrice
+	    +number votes
+	    +object userVotes
+	    +Comment[] comments
+    }
+    class Post {
+	    +string id
+	    +string title
+	    +string description
+	    +BuildConfiguration partList
+	    +string userId
+	    +UserProfile userProfile
+	    +object votes
+	    +number voteCount
+	    +number commentCount
+	    +Comment[] comments
+    }
+    class Comment {
+	    +string id
+	    +string userId
+	    +string userEmail
+	    +string content
+    }
+    class UserProfile {
+	    +string displayName
+	    +string photoURL
+	    +string email
+    }
+    class AIAnalystService {
+	    +analyzeBuildConfiguration(config)
+	    +analyzePerformance(config)
+	    +analyzeCompatibility(config)
+	    +analyzePowerConsumption(config)
+	    +analyzePriceEfficiency(config)
+	    +generateRecommendations(config)
+    }
+    class AnalysisResult {
+	    +number overallScore
+	    +number performance
+	    +string compatibility
+	    +number powerConsumption
+	    +number priceEfficiency
+	    +string[] recommendations
+    }
+    class BuildService {
+	    +saveBuild(userId, buildConfig, userProfile)
+	    +getAllBuilds()
+	    +updateBuild(buildId, buildConfig)
+	    +deleteBuild(buildId)
+	    +addComment(buildId, userId, userEmail, content)
+	    +toggleVote(buildId, userId)
+    }
+    class PostService {
+	    +createPost(userId, buildConfig, title, description, userProfile)
+	    +getAllPosts()
+	    +getPostComments(postId)
+	    +addComment(postId, userId, userEmail, content)
+	    +toggleVote(postId, userId)
+	    +deletePost(postId)
+    }
+    class GeminiAPI {
+	    +chatWithGemini(messages)
+    }
+    class SocketUtils {
+	    +checkSocketCompatibility(cpu, motherboard)
+	    +mapCpuToSocket(cpu)
+    }
+    class Firebase {
+	    +object database
+	    +object auth
+	    +object storage
+    }
+
+    User o-- SavedBuild
+    User o-- Post
+    User o-- Comment
+    SavedBuild *-- BuildConfiguration
+    Post *-- BuildConfiguration
+    SavedBuild o-- Comment
+    Post o-- Comment
+    BuildConfiguration *-- CPU
+    BuildConfiguration *-- Memory
+    BuildConfiguration *-- Motherboard
+    BuildConfiguration *-- VideoCard
+    BuildConfiguration *-- Case
+    BuildConfiguration *-- PowerSupply
+    BuildConfiguration *-- InternalHardDrive
+    BuildConfiguration *-- Monitor
+    AIAnalystService *-- AnalysisResult
+    BuildService ..> Firebase
+    PostService ..> Firebase
+    AuthContext ..> Firebase
+    BuildService ..> SocketUtils
+    AIAnalystService ..> BuildConfiguration

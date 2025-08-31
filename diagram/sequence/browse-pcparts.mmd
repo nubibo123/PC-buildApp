@@ -1,0 +1,39 @@
+---
+title: Browse PC Parts - Sequence Diagram
+---
+sequenceDiagram
+    participant User
+    participant UI as PC Parts UI
+    participant BuildService
+    participant CSVData as CSV Data
+
+    User->>UI: Navigate to PC Parts
+    UI->>BuildService: getAllComponentTypes()
+    BuildService->>UI: Return component categories
+    UI->>User: Display categories
+    
+    User->>UI: Select component category
+    UI->>BuildService: getComponentsByType(category)
+    BuildService->>CSVData: loadComponentData(category)
+    CSVData->>BuildService: Return components list
+    BuildService->>UI: Return filtered components
+    UI->>User: Display components with pagination
+    
+    opt Apply filters
+        User->>UI: Set filters (price, manufacturer, etc.)
+        UI->>BuildService: applyFilters(filters)
+        BuildService->>UI: Return filtered results
+        UI->>User: Update display
+    end
+    
+    opt Search components
+        User->>UI: Enter search query
+        UI->>BuildService: searchComponents(query)
+        BuildService->>UI: Return search results
+        UI->>User: Display search results
+    end
+    
+    User->>UI: Select component for details
+    UI->>BuildService: getComponentDetails(componentId)
+    BuildService->>UI: Return detailed specifications
+    UI->>User: Display component details

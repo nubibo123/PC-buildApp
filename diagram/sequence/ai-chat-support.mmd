@@ -1,0 +1,31 @@
+---
+title: AI Chat Support - Sequence Diagram
+---
+sequenceDiagram
+    participant User
+    participant UI as Chat UI
+    participant GeminiAPI as Gemini AI
+    participant BuildService
+
+    User->>UI: Open AI chat
+    UI->>UI: Initialize chat session
+    UI->>User: Display chat interface
+    
+    loop Chat conversation
+        User->>UI: Send message
+        UI->>UI: Display user message
+        UI->>GeminiAPI: sendMessage(message, context)
+        
+        alt Build-related question
+            GeminiAPI->>BuildService: getCurrentBuildContext()
+            BuildService->>GeminiAPI: Return build data
+        end
+        
+        GeminiAPI->>GeminiAPI: Process message with AI
+        GeminiAPI->>UI: Return AI response
+        UI->>UI: Display AI message
+        UI->>User: Show AI response
+    end
+    
+    User->>UI: Close chat
+    UI->>UI: Save chat history (optional)

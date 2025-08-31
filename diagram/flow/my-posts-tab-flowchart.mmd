@@ -1,0 +1,87 @@
+---
+title: My Posts Tab - Flowchart
+---
+flowchart TD
+    Start([User opens My Posts Tab])
+    
+    CheckAuth{User authenticated?}
+    RedirectLogin[Redirect to Login]
+    
+    LoadUserPosts[Load user's posts]
+    
+    HasPosts{Has posts?}
+    ShowEmpty[Show empty state<br/>"No posts yet"<br/>+ Create Post button]
+    
+    DisplayPosts[Display posts list<br/>- Post title<br/>- Description preview<br/>- Build thumbnail<br/>- Vote count<br/>- Comment count<br/>- Date posted]
+    
+    ShowActions[Show post actions<br/>- Create New Post<br/>- Sort by: Date, Votes<br/>- Filter: All, Public, Draft]
+    
+    UserAction{User action}
+    
+    %% Post Actions
+    SelectPost[Select specific post]
+    ViewPostDetail[View post details<br/>- Full description<br/>- Build configuration<br/>- All comments<br/>- Vote statistics]
+    
+    PostDetailAction{Post action}
+    
+    EditPost[Edit post<br/>- Update title<br/>- Update description<br/>- Modify build config]
+    DeletePost[Delete post]
+    ViewStats[View post analytics<br/>- Views<br/>- Votes over time<br/>- Comment engagement]
+    SharePost[Share post link]
+    
+    %% Create New Post
+    CreateNewPost[Navigate to Create Post]
+    
+    %% Confirmation dialogs
+    ConfirmDelete{Confirm delete post?}
+    PerformDelete[Remove post from database]
+    
+    %% Filters and Sorting
+    ApplySort[Apply sort option]
+    ApplyFilter[Apply status filter]
+    RefreshPosts[Refresh posts list]
+    
+    End([End])
+    
+    Start --> CheckAuth
+    CheckAuth -->|No| RedirectLogin
+    CheckAuth -->|Yes| LoadUserPosts
+    RedirectLogin --> End
+    
+    LoadUserPosts --> HasPosts
+    HasPosts -->|No| ShowEmpty
+    HasPosts -->|Yes| DisplayPosts
+    
+    ShowEmpty --> CreateNewPost
+    CreateNewPost --> End
+    
+    DisplayPosts --> ShowActions
+    ShowActions --> UserAction
+    
+    UserAction -->|Select Post| SelectPost
+    UserAction -->|Create New| CreateNewPost
+    UserAction -->|Sort| ApplySort
+    UserAction -->|Filter| ApplyFilter
+    UserAction -->|Refresh| RefreshPosts
+    UserAction -->|Exit| End
+    
+    SelectPost --> ViewPostDetail
+    ViewPostDetail --> PostDetailAction
+    
+    PostDetailAction -->|Edit| EditPost
+    PostDetailAction -->|Delete| ConfirmDelete
+    PostDetailAction -->|View Stats| ViewStats
+    PostDetailAction -->|Share| SharePost
+    PostDetailAction -->|Back| DisplayPosts
+    
+    ConfirmDelete -->|Yes| PerformDelete
+    ConfirmDelete -->|No| ViewPostDetail
+    PerformDelete --> LoadUserPosts
+    
+    EditPost --> End
+    ViewStats --> End
+    SharePost --> End
+    
+    ApplySort --> RefreshPosts
+    ApplyFilter --> RefreshPosts
+    RefreshPosts --> DisplayPosts

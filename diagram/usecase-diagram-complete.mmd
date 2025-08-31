@@ -1,0 +1,163 @@
+graph TD
+    %% Actors
+    User["👤 User"]
+    AI["🤖 AI Assistant"]
+    Firebase["🔥 Firebase"]
+    Gemini["✨ Gemini AI"]
+
+    %% Authentication Use Cases
+    UC1((Register Account))
+    UC2((Login))
+    UC3((Logout))
+    UC4((Manage Profile))
+
+    %% PC Building Use Cases
+    UC5((Browse PC Parts))
+    UC6((Filter Parts))
+    UC7((Search Parts))
+    UC8((Sort Parts))
+    UC9((Select Component))
+    UC10((Build Configuration))
+    UC11((Check Compatibility))
+    UC12((Calculate Total Price))
+    UC13((Save Build))
+    UC14((Load Build))
+    UC15((Update Build))
+    UC16((Delete Build))
+
+    %% AI Analysis Use Cases
+    UC17((Analyze Build Performance))
+    UC18((Check Build Compatibility))
+    UC19((Calculate Power Consumption))
+    UC20((Evaluate Price Efficiency))
+    UC21((Generate Recommendations))
+    UC22((AI Chat Assistant))
+
+    %% Social Features Use Cases
+    UC23((Create Post))
+    UC24((View All Posts))
+    UC25((View My Posts))
+    UC26((Edit Post))
+    UC27((Delete Post))
+    UC28((Comment on Post))
+    UC29((Vote on Post))
+    UC30((View Post Details))
+    UC31((Share Build))
+
+    %% Data Management Use Cases
+    UC32((Store User Data))
+    UC33((Store Build Configs))
+    UC34((Store Posts))
+    UC35((Store Comments))
+    UC36((Store Votes))
+    UC37((Load Component Data))
+    UC38((Manage Images))
+
+    %% User Relationships - Authentication
+    User --> UC1
+    User --> UC2
+    User --> UC3
+    User --> UC4
+
+    %% User Relationships - PC Building
+    User --> UC5
+    User --> UC6
+    User --> UC7
+    User --> UC8
+    User --> UC9
+    User --> UC10
+    User --> UC11
+    User --> UC12
+    User --> UC13
+    User --> UC14
+    User --> UC15
+    User --> UC16
+
+    %% User Relationships - Social Features
+    User --> UC23
+    User --> UC24
+    User --> UC25
+    User --> UC26
+    User --> UC27
+    User --> UC28
+    User --> UC29
+    User --> UC30
+    User --> UC31
+
+    %% User Relationships - AI Chat
+    User --> UC22
+
+    %% AI Assistant Relationships
+    AI --> UC17
+    AI --> UC18
+    AI --> UC19
+    AI --> UC20
+    AI --> UC21
+    
+    %% Gemini AI Relationships
+    Gemini --> UC22
+
+    %% Firebase Relationships
+    Firebase --> UC32
+    Firebase --> UC33
+    Firebase --> UC34
+    Firebase --> UC35
+    Firebase --> UC36
+    Firebase --> UC37
+    Firebase --> UC38
+
+    %% Include Relationships
+    UC10 -.-> UC11
+    UC10 -.-> UC12
+    UC13 -.-> UC11
+    UC23 -.-> UC10
+    UC17 -.-> UC11
+    UC17 -.-> UC19
+    UC17 -.-> UC20
+
+    %% Extend Relationships
+    UC21 -.-> UC17
+    UC22 -.-> UC10
+    UC31 -.-> UC13
+
+    %% System Boundary
+    subgraph System["PC Build App System"]
+        UC1
+        UC2
+        UC3
+        UC4
+        UC5
+        UC6
+        UC7
+        UC8
+        UC9
+        UC10
+        UC11
+        UC12
+        UC13
+        UC14
+        UC15
+        UC16
+        UC17
+        UC18
+        UC19
+        UC20
+        UC21
+        UC22
+        UC23
+        UC24
+        UC25
+        UC26
+        UC27
+        UC28
+        UC29
+        UC30
+        UC31
+        UC32
+        UC33
+        UC34
+        UC35
+        UC36
+        UC37
+        UC38
+    end

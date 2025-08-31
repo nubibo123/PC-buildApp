@@ -1,0 +1,12 @@
+// yUML Use Case Diagram for Login/Signup (No Firebase)
+[User]-(Login)
+[User]-(Sign Up)
+[User]-(Logout)
+[User]-(Reset Password)
+[User]-(Verify Email)
+[User]-(Update Profile)
+[User]-(Delete Account)
+
+(Login)-<<extend>>-(Reset Password)
+(Sign Up)-<<include>>-(Verify Email)
+(Update Profile)-<<include>>-(Verify Email)

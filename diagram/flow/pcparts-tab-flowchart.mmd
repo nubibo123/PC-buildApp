@@ -1,0 +1,67 @@
+---
+title: PC Parts Tab - Flowchart
+---
+flowchart TD
+    Start([User opens PC Parts Tab])
+    
+    SelectCategory[Select component category<br/>- CPU<br/>- Memory<br/>- Motherboard<br/>- Video Card<br/>- Case<br/>- Power Supply<br/>- Storage<br/>- Monitor]
+    
+    LoadAllParts[Load all parts for category]
+    ShowFilterOptions[Show filter options<br/>- Price range<br/>- Manufacturer<br/>- Specifications]
+    
+    UserInput{User input}
+    
+    %% Filter Path
+    ApplyFilters[Apply selected filters]
+    FilterResults[Filter parts list]
+    
+    %% Search Path
+    SearchInput[Enter search query]
+    SearchResults[Search in parts list]
+    
+    %% Sort Path
+    SelectSort[Select sort option<br/>- Price (Low to High)<br/>- Price (High to Low)<br/>- Name (A-Z)<br/>- Name (Z-A)]
+    SortResults[Sort parts list]
+    
+    DisplayParts[Display parts with pagination]
+    
+    UserAction{User action}
+    
+    ViewDetails[View part details<br/>- Specifications<br/>- Images<br/>- Price<br/>- Compatibility info]
+    
+    LoadMore[Load more parts<br/>(pagination)]
+    
+    ResetFilters[Reset all filters]
+    
+    End([End])
+    
+    Start --> SelectCategory
+    SelectCategory --> LoadAllParts
+    LoadAllParts --> ShowFilterOptions
+    ShowFilterOptions --> UserInput
+    
+    UserInput -->|Filter| ApplyFilters
+    UserInput -->|Search| SearchInput
+    UserInput -->|Sort| SelectSort
+    UserInput -->|Browse| DisplayParts
+    
+    ApplyFilters --> FilterResults
+    FilterResults --> DisplayParts
+    
+    SearchInput --> SearchResults
+    SearchResults --> DisplayParts
+    
+    SelectSort --> SortResults
+    SortResults --> DisplayParts
+    
+    DisplayParts --> UserAction
+    
+    UserAction -->|View Details| ViewDetails
+    UserAction -->|Load More| LoadMore
+    UserAction -->|Reset| ResetFilters
+    UserAction -->|Change Category| SelectCategory
+    UserAction -->|Exit| End
+    
+    ViewDetails --> End
+    LoadMore --> DisplayParts
+    ResetFilters --> LoadAllParts

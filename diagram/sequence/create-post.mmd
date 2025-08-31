@@ -1,0 +1,38 @@
+---
+title: Create Post - Sequence Diagram
+---
+sequenceDiagram
+    participant User
+    participant UI as Create Post UI
+    participant Auth as AuthContext
+    participant PostService
+    participant BuildService
+    participant Firebase as Firebase DB
+
+    User->>UI: Navigate to create post
+    UI->>Auth: getCurrentUser()
+    Auth->>UI: Return user data
+    UI->>BuildService: getUserBuilds()
+    BuildService->>Firebase: Fetch user builds
+    Firebase->>BuildService: Return builds list
+    BuildService->>UI: Display available builds
+    
+    User->>UI: Select build for post
+    User->>UI: Enter title and description
+    UI->>UI: Validate input
+    alt Invalid input
+        UI->>User: Show validation errors
+    else Valid input
+        UI->>PostService: createPost(title, description, buildId)
+        PostService->>Firebase: Save post data
+        alt Save failed
+            Firebase->>PostService: Return error
+            PostService->>UI: Creation error
+            UI->>User: Show error message
+        else Save successful
+            Firebase->>PostService: Return post ID
+            PostService->>UI: Creation success
+            UI->>User: Show success message
+            UI->>User: Navigate to post view
+        end
+    end

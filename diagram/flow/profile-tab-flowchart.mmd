@@ -1,0 +1,101 @@
+---
+title: Profile Tab - Flowchart
+---
+flowchart TD
+    Start([User opens Profile Tab])
+    
+    CheckAuth{User authenticated?}
+    RedirectLogin[Redirect to Login]
+    
+    LoadProfile[Load user profile data]
+    DisplayProfile[Display profile info<br/>- Avatar<br/>- Display name<br/>- Email<br/>- Join date]
+    
+    ShowOptions[Show profile options<br/>- Edit Profile<br/>- My Builds<br/>- My Posts<br/>- Settings<br/>- Logout]
+    
+    UserAction{User selects option}
+    
+    %% Edit Profile
+    EditProfile[Open edit profile form]
+    UpdateName[Update display name]
+    ChangeAvatar[Change profile picture]
+    SaveChanges[Save profile changes]
+    
+    %% My Builds
+    LoadUserBuilds[Load user's saved builds]
+    DisplayBuilds[Display builds list<br/>- Build name<br/>- Components<br/>- Price<br/>- Date created]
+    
+    BuildAction{Build action}
+    ViewBuild[View build details]
+    EditBuild[Edit build]
+    DeleteBuild[Delete build]
+    ShareBuild[Share as post]
+    
+    %% My Posts
+    LoadUserPosts[Load user's posts]
+    DisplayPosts[Display posts list<br/>- Post title<br/>- Description<br/>- Build config<br/>- Date<br/>- Votes/Comments]
+    
+    PostAction{Post action}
+    ViewPost[View post details]
+    EditPost[Edit post]
+    DeletePost[Delete post]
+    
+    %% Settings
+    ShowSettings[Show app settings<br/>- Notifications<br/>- Privacy<br/>- Theme<br/>- Language]
+    
+    %% Logout
+    ConfirmLogout{Confirm logout?}
+    PerformLogout[Clear user session]
+    
+    End([End])
+    
+    Start --> CheckAuth
+    CheckAuth -->|No| RedirectLogin
+    CheckAuth -->|Yes| LoadProfile
+    RedirectLogin --> End
+    
+    LoadProfile --> DisplayProfile
+    DisplayProfile --> ShowOptions
+    ShowOptions --> UserAction
+    
+    UserAction -->|Edit Profile| EditProfile
+    UserAction -->|My Builds| LoadUserBuilds
+    UserAction -->|My Posts| LoadUserPosts
+    UserAction -->|Settings| ShowSettings
+    UserAction -->|Logout| ConfirmLogout
+    
+    %% Edit Profile Flow
+    EditProfile --> UpdateName
+    EditProfile --> ChangeAvatar
+    UpdateName --> SaveChanges
+    ChangeAvatar --> SaveChanges
+    SaveChanges --> DisplayProfile
+    
+    %% My Builds Flow
+    LoadUserBuilds --> DisplayBuilds
+    DisplayBuilds --> BuildAction
+    BuildAction -->|View| ViewBuild
+    BuildAction -->|Edit| EditBuild
+    BuildAction -->|Delete| DeleteBuild
+    BuildAction -->|Share| ShareBuild
+    
+    ViewBuild --> End
+    EditBuild --> End
+    DeleteBuild --> LoadUserBuilds
+    ShareBuild --> End
+    
+    %% My Posts Flow
+    LoadUserPosts --> DisplayPosts
+    DisplayPosts --> PostAction
+    PostAction -->|View| ViewPost
+    PostAction -->|Edit| EditPost
+    PostAction -->|Delete| DeletePost
+    
+    ViewPost --> End
+    EditPost --> End
+    DeletePost --> LoadUserPosts
+    
+    %% Settings & Logout
+    ShowSettings --> End
+    ConfirmLogout -->|Yes| PerformLogout
+    ConfirmLogout -->|No| ShowOptions
+    PerformLogout --> RedirectLogin

@@ -1,0 +1,70 @@
+---
+title: Home Tab (index) - Flowchart
+---
+flowchart TD
+    Start([User opens Home Tab])
+    
+    CheckAuth{User authenticated?}
+    Login[Redirect to Login]
+    
+    LoadData[Load builds and posts]
+    ShowToggle[Show toggle: Builds/Posts]
+    
+    UserChoice{User selects}
+    
+    %% Builds Flow
+    ShowBuilds[Display all builds]
+    SelectBuild{User selects build?}
+    ShowBuildDetail[Show build details<br/>- Components<br/>- Price<br/>- Comments<br/>- Votes]
+    
+    BuildAction{User action}
+    Vote1[Toggle vote]
+    Comment1[Add comment]
+    
+    %% Posts Flow  
+    ShowPosts[Display all posts]
+    SelectPost{User selects post?}
+    ShowPostDetail[Show post details<br/>- Title<br/>- Description<br/>- Build config<br/>- Comments<br/>- Votes]
+    
+    PostAction{User action}
+    Vote2[Toggle vote]
+    Comment2[Add comment]
+    
+    %% Common actions
+    Refresh[Pull to refresh]
+    End([End])
+    
+    Start --> CheckAuth
+    CheckAuth -->|No| Login
+    CheckAuth -->|Yes| LoadData
+    Login --> End
+    
+    LoadData --> ShowToggle
+    ShowToggle --> UserChoice
+    
+    UserChoice -->|Builds| ShowBuilds
+    UserChoice -->|Posts| ShowPosts
+    
+    ShowBuilds --> SelectBuild
+    SelectBuild -->|Yes| ShowBuildDetail
+    SelectBuild -->|No| End
+    
+    ShowBuildDetail --> BuildAction
+    BuildAction -->|Vote| Vote1
+    BuildAction -->|Comment| Comment1
+    Vote1 --> End
+    Comment1 --> End
+    
+    ShowPosts --> SelectPost
+    SelectPost -->|Yes| ShowPostDetail
+    SelectPost -->|No| End
+    
+    ShowPostDetail --> PostAction
+    PostAction -->|Vote| Vote2
+    PostAction -->|Comment| Comment2
+    Vote2 --> End
+    Comment2 --> End
+    
+    ShowBuilds --> Refresh
+    ShowPosts --> Refresh
+    Refresh --> LoadData

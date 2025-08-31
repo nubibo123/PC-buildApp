@@ -1,0 +1,29 @@
+---
+title: User Registration - Sequence Diagram
+---
+sequenceDiagram
+    participant User
+    participant UI as Registration UI
+    participant Auth as AuthContext
+    participant Firebase as Firebase Auth
+    participant DB as Firebase Database
+
+    User->>UI: Enter registration details
+    UI->>UI: Validate input fields
+    alt Invalid input
+        UI->>User: Show validation errors
+    else Valid input
+        UI->>Auth: register(email, password, displayName)
+        Auth->>Firebase: createUserWithEmailAndPassword()
+        alt Registration failed
+            Firebase->>Auth: Return error
+            Auth->>UI: Registration error
+            UI->>User: Show error message
+        else Registration successful
+            Firebase->>Auth: Return user data
+            Auth->>DB: Save user profile
+            DB->>Auth: Confirm save
+            Auth->>UI: Registration success
+            UI->>User: Navigate to main app
+        end
+    end

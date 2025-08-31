@@ -1,0 +1,96 @@
+---
+title: PC Build App - Class Diagram (Simplified)
+---
+classDiagram
+    class User {
+        +string uid
+        +string email
+        +string displayName
+        +login()
+        +register()
+    }
+
+    class CPU {
+        +string name
+        +number price
+        +number coreCount
+        +string manufacturer
+    }
+
+    class Memory {
+        +string name
+        +number price
+        +string speed
+    }
+
+    class Motherboard {
+        +string name
+        +number price
+        +string socket
+    }
+
+    class VideoCard {
+        +string name
+        +number price
+        +string chipset
+    }
+
+    class BuildConfiguration {
+        +CPU cpu
+        +Memory memory
+        +Motherboard motherboard
+        +VideoCard videoCard
+        +calculateTotalPrice()
+    }
+
+    class SavedBuild {
+        +string id
+        +string userId
+        +BuildConfiguration config
+        +number totalPrice
+    }
+
+    class Post {
+        +string id
+        +string title
+        +string description
+        +BuildConfiguration partList
+        +string userId
+    }
+
+    class Comment {
+        +string id
+        +string userId
+        +string content
+    }
+
+    class AIAnalystService {
+        +analyzeBuildConfiguration(config)
+        +generateRecommendations(config)
+    }
+
+    class BuildService {
+        +saveBuild()
+        +getAllBuilds()
+        +addComment()
+    }
+
+    class Firebase {
+        +object database
+        +object auth
+    }
+
+    User ||--o{ SavedBuild
+    User ||--o{ Post
+    User ||--o{ Comment
+    
+    SavedBuild ||--|| BuildConfiguration
+    Post ||--|| BuildConfiguration
+    
+    BuildConfiguration ||--o| CPU
+    BuildConfiguration ||--o| Memory
+    BuildConfiguration ||--o| Motherboard
+    BuildConfiguration ||--o| VideoCard
+    
+    BuildService ..> Firebase
+    AIAnalystService ..> BuildConfiguration

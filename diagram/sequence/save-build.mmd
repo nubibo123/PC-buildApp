@@ -1,0 +1,31 @@
+---
+title: Save Build Configuration - Sequence Diagram
+---
+sequenceDiagram
+    participant User
+    participant UI as Build UI
+    participant Auth as AuthContext
+    participant BuildService
+    participant Firebase as Firebase DB
+
+    User->>UI: Click save build
+    UI->>Auth: getCurrentUser()
+    Auth->>UI: Return user data
+    alt User not authenticated
+        UI->>User: Redirect to login
+    else User authenticated
+        UI->>UI: Show save dialog
+        User->>UI: Enter build name/description
+        UI->>BuildService: saveBuild(config, metadata)
+        BuildService->>BuildService: validateBuildConfig()
+        alt Invalid configuration
+            BuildService->>UI: Return validation error
+            UI->>User: Show error message
+        else Valid configuration
+            BuildService->>Firebase: Save build data
+            Firebase->>BuildService: Return save confirmation
+            BuildService->>UI: Save success
+            UI->>User: Show success message
+            UI->>User: Navigate to saved builds
+        end
+    end

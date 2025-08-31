@@ -1,0 +1,27 @@
+---
+title: User Login - Sequence Diagram
+---
+sequenceDiagram
+    participant User
+    participant UI as Login UI
+    participant Auth as AuthContext
+    participant Firebase as Firebase Auth
+
+    User->>UI: Enter login credentials
+    UI->>UI: Validate input
+    alt Invalid input
+        UI->>User: Show validation errors
+    else Valid input
+        UI->>Auth: login(email, password)
+        Auth->>Firebase: signInWithEmailAndPassword()
+        alt Login failed
+            Firebase->>Auth: Return error
+            Auth->>UI: Login error
+            UI->>User: Show error message
+        else Login successful
+            Firebase->>Auth: Return user data
+            Auth->>Auth: Set user state
+            Auth->>UI: Login success
+            UI->>User: Navigate to home screen
+        end
+    end
