@@ -1,6 +1,6 @@
 import { equalTo, get, orderByChild, push, query, ref, set, update } from 'firebase/database';
 import { BuildConfiguration } from '../app/(tabs)/build';
-import { database } from './firebase';
+import { auth, database } from './firebase';
 
 export interface UserProfile {
   displayName: string;
@@ -211,6 +211,11 @@ export const deleteBuild = async (buildId: string, userId: string): Promise<void
 
 export const getAllBuilds = async (): Promise<SavedBuild[]> => {
   try {
+    // Check if user is authenticated
+    if (!auth.currentUser) {
+      throw new Error('User not authenticated');
+    }
+    
     const buildsRef = ref(database, 'builds');
     const snapshot = await get(buildsRef);
 

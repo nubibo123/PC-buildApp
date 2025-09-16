@@ -7,6 +7,6 @@
 [User]-(Update Profile)
 [User]-(Delete Account)
 
-(Login)-<<extend>>-(Reset Password)
-(Sign Up)-<<include>>-(Verify Email)
-(Update Profile)-<<include>>-(Verify Email)
+(Login)-(Reset Password):<<extend>>
+(Sign Up)-(Verify Email):<<include>>
+(Update Profile)-(Verify Email):<<include>>

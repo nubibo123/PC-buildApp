@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Input, Modal, Text } from '@ui-kitten/components';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../lib/AuthContext';
@@ -8,6 +8,12 @@ import { addComment, deletePost, getUserPosts, Post, toggleVote } from '../../li
 
 export default function MyPostsScreen() {
   const { user } = useAuth();
+  
+  // Redirect to login if user is not authenticated
+  if (!user) {
+    return <Redirect href="/(auth)/login" />;
+  }
+  
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);

@@ -1,0 +1,129 @@
+graph TD
+    %% Actors
+    User["User"]
+    AI["AI Assistant"]
+    Firebase["Firebase"]
+    Gemini["Gemini AI"]
+
+    %% System boundary
+    subgraph PCBuildApp["PC Build App System"]
+        %% Authentication & Profile Management
+        subgraph Auth["Authentication & Profile"]
+            UC1((Register))
+            UC2((Login))
+            UC3((Logout))
+            UC4((Update Profile))
+        end
+
+        %% PC Parts Management
+        subgraph Parts["PC Parts Management"]
+            UC5((Browse Parts))
+            UC6((Filter Parts))
+            UC7((Search Parts))
+            UC8((Sort Parts))
+            UC9((View Part Details))
+        end
+
+        %% PC Build Configuration
+        subgraph Build["Build Configuration"]
+            UC10((Create Build))
+            UC11((Select Components))
+            UC12((Check Compatibility))
+            UC13((Calculate Price))
+            UC14((Save Build))
+            UC15((Load Build))
+            UC16((Update Build))
+            UC17((Delete Build))
+        end
+
+        %% AI Analysis & Recommendations
+        subgraph AIAnalysis["AI Analysis"]
+            UC18((Analyze Performance))
+            UC19((Check Compatibility))
+            UC20((Calculate Power))
+            UC21((Price Efficiency))
+            UC22((Generate Recommendations))
+            UC23((AI Chat Support))
+        end
+
+        %% Social Features
+        subgraph Social["Social Features"]
+            UC24((Create Post))
+            UC25((View Posts))
+            UC26((View My Posts))
+            UC27((Edit Post))
+            UC28((Delete Post))
+            UC29((Comment on Post))
+            UC30((Vote on Post))
+            UC31((Share Build))
+        end
+
+        %% Data Storage
+        subgraph Storage["Data Storage"]
+            UC32((Store Users))
+            UC33((Store Builds))
+            UC34((Store Posts))
+            UC35((Store Comments))
+            UC36((Store Votes))
+            UC37((Store Components))
+            UC38((Store Images))
+        end
+    end
+
+    %% User relationships
+    User --> UC1
+    User --> UC2
+    User --> UC3
+    User --> UC4
+    User --> UC5
+    User --> UC6
+    User --> UC7
+    User --> UC8
+    User --> UC9
+    User --> UC10
+    User --> UC11
+    User --> UC14
+    User --> UC15
+    User --> UC16
+    User --> UC17
+    User --> UC23
+    User --> UC24
+    User --> UC25
+    User --> UC26
+    User --> UC27
+    User --> UC28
+    User --> UC29
+    User --> UC30
+    User --> UC31
+
+    %% AI Assistant relationships
+    AI --> UC18
+    AI --> UC19
+    AI --> UC20
+    AI --> UC21
+    AI --> UC22
+
+    %% Gemini AI relationships
+    Gemini --> UC23
+
+    %% Firebase relationships
+    Firebase --> UC32
+    Firebase --> UC33
+    Firebase --> UC34
+    Firebase --> UC35
+    Firebase --> UC36
+    Firebase --> UC37
+    Firebase --> UC38
+
+    %% Include relationships
+    UC10 -.-> UC11
+    UC10 -.-> UC12
+    UC10 -.-> UC13
+    UC14 -.-> UC12
+    UC24 -.-> UC14
+    UC18 -.-> UC19
+    UC18 -.-> UC20
+
+    %% Extend relationships
+    UC22 -.-> UC18
+    UC31 -.-> UC14

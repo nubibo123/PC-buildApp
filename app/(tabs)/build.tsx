@@ -1,7 +1,8 @@
 import { Picker } from '@react-native-picker/picker';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import Markdown from 'react-native-markdown-display';
 import {
   CPU,
   Case,
@@ -21,11 +22,11 @@ import {
   loadVideoCardData
 } from '../../data/csvData';
 import AIChatBox from '../modals/aiChatBox';
-  const [showAIChat, setShowAIChat] = useState(false);
 
 import { AnalysisResult, analyzeBuildConfiguration } from '../../lib/aiAnalystService';
 import { useAuth } from '../../lib/AuthContext';
 import { saveBuild, updateBuild } from '../../lib/buildService';
+import { analyzeBuildWithGemini } from '../../lib/geminiApi';
 import { createPost } from '../../lib/postService';
 import { checkSocketCompatibility, mapCpuToSocket } from '../../lib/socketUtils';
 const DEFAULT_IMAGE = require('../../assets/images/default-avatar.png');
@@ -100,6 +101,12 @@ export interface BuildConfiguration {
 
 const Build = () => {
   const { user } = useAuth();
+  
+  // Redirect to login if user is not authenticated
+  if (!user) {
+    return <Redirect href="/(auth)/login" />;
+  }
+  
   const router = useRouter();
   const params = useLocalSearchParams();
   const [availableParts, setAvailableParts] = useState<PartData[]>([]);
@@ -109,6 +116,11 @@ const Build = () => {
     email: user?.email || ''
   }));
   const [editBuildId, setEditBuildId] = useState<string | null>(null);
+  const [showAIChat, setShowAIChat] = useState(false);
+  const [aiChatInitial, setAiChatInitial] = useState<string | null>(null);
+  const [geminiAnalysis, setGeminiAnalysis] = useState<string | null>(null);
+  const [geminiLoading, setGeminiLoading] = useState(false);
+  const [geminiError, setGeminiError] = useState<string | null>(null);
 
   // Initialize buildConfig with null values
   const [buildConfig, setBuildConfig] = useState<BuildConfiguration>(() => {
@@ -267,8 +279,6 @@ const Build = () => {
       setAnalysisResult(null);
     }
   }, [buildConfig]);
-
-
 
   const handleImageError = (partName: string) => {
     setImageLoadErrors(prev => ({
@@ -594,79 +604,186 @@ const Build = () => {
       case 'cpu':
         const cpuPart = part as CPU;
         return (
-          <>
-            <Text style={styles.detailText}>Cores: {cpuPart.core_count}</Text>
-            <Text style={styles.detailText}>Base Clock: {cpuPart.core_clock} MHz</Text>
-            <Text style={styles.detailText}>Boost Clock: {cpuPart.boost_clock} MHz</Text>
-            <Text style={styles.detailText}>TDP: {cpuPart.tdp}W</Text>
-            <Text style={styles.detailText}>Graphics: {cpuPart.graphics}</Text>
-          </>
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Manufacturer:</Text>
+              <Text style={styles.detailValue}>{cpuPart.manufacturer}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Series:</Text>
+              <Text style={styles.detailValue}>{cpuPart.series}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Core Count:</Text>
+              <Text style={styles.detailValue}>{cpuPart.core_count}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Thread Count:</Text>
+              <Text style={styles.detailValue}>{cpuPart.thread_count}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Core Clock:</Text>
+              <Text style={styles.detailValue}>{cpuPart.core_clock} MHz</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Boost Clock:</Text>
+              <Text style={styles.detailValue}>{cpuPart.boost_clock} MHz</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>TDP:</Text>
+              <Text style={styles.detailValue}>{cpuPart.tdp}W</Text>
+            </View>
+          </View>
         );
       case 'memory':
         const memoryPart = part as Memory;
         return (
-          <>
-            <Text style={styles.detailText}>Speed: {memoryPart.speed}</Text>
-            <Text style={styles.detailText}>Modules: {memoryPart.modules}</Text>
-            <Text style={styles.detailText}>CAS Latency: {memoryPart.cas_latency}</Text>
-          </>
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Speed:</Text>
+              <Text style={styles.detailValue}>{memoryPart.speed}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Modules:</Text>
+              <Text style={styles.detailValue}>{memoryPart.modules}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>CAS Latency:</Text>
+              <Text style={styles.detailValue}>{memoryPart.cas_latency}</Text>
+            </View>
+          </View>
         );
       case 'motherboard':
         const motherboardPart = part as Motherboard;
         return (
-          <>
-            <Text style={styles.detailText}>Socket: {motherboardPart.socket}</Text>
-            <Text style={styles.detailText}>Form Factor: {motherboardPart.form_factor}</Text>
-            <Text style={styles.detailText}>Max Memory: {motherboardPart.max_memory}GB</Text>
-          </>
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Socket:</Text>
+              <Text style={styles.detailValue}>{motherboardPart.socket}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Form Factor:</Text>
+              <Text style={styles.detailValue}>{motherboardPart.form_factor}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Max Memory:</Text>
+              <Text style={styles.detailValue}>{motherboardPart.max_memory}GB</Text>
+            </View>
+          </View>
         );
       case 'videoCard':
         const gpuPart = part as VideoCard;
         return (
-          <>
-            <Text style={styles.detailText}>Chipset: {gpuPart.chipset}</Text>
-            <Text style={styles.detailText}>Memory: {gpuPart.memory}GB</Text>
-            <Text style={styles.detailText}>Core Clock: {gpuPart.core_clock} MHz</Text>
-          </>
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Chipset:</Text>
+              <Text style={styles.detailValue}>{gpuPart.chipset}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Memory:</Text>
+              <Text style={styles.detailValue}>{gpuPart.memory}GB</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Core Clock:</Text>
+              <Text style={styles.detailValue}>{gpuPart.core_clock} MHz</Text>
+            </View>
+          </View>
         );
       case 'case':
         const casePart = part as Case;
         return (
-          <>
-            <Text style={styles.detailText}>Type: {casePart.type}</Text>
-            <Text style={styles.detailText}>Color: {casePart.color}</Text>
-            <Text style={styles.detailText}>Power Supply: {casePart.psu}</Text>
-          </>
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Type:</Text>
+              <Text style={styles.detailValue}>{casePart.type}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Color:</Text>
+              <Text style={styles.detailValue}>{casePart.color}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>PSU:</Text>
+              <Text style={styles.detailValue}>{casePart.psu || 'None'}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Side Panel:</Text>
+              <Text style={styles.detailValue}>{casePart.side_panel}</Text>
+            </View>
+          </View>
         );
       case 'powerSupply':
         const psuPart = part as PowerSupply;
         return (
-          <>
-            <Text style={styles.detailText}>Type: {psuPart.type}</Text>
-            <Text style={styles.detailText}>Efficiency Rating: {psuPart.efficiency}</Text>
-            <Text style={styles.detailText}>Wattage: {psuPart.wattage}W</Text>
-            <Text style={styles.detailText}>Modular: {psuPart.modular}</Text>
-          </>
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Type:</Text>
+              <Text style={styles.detailValue}>{psuPart.type}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Efficiency:</Text>
+              <Text style={styles.detailValue}>{psuPart.efficiency}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Wattage:</Text>
+              <Text style={styles.detailValue}>{psuPart.wattage}W</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Modular:</Text>
+              <Text style={styles.detailValue}>{psuPart.modular}</Text>
+            </View>
+          </View>
         );
       case 'internalHardDrive':
-        const hddPart = part as InternalHardDrive;
+        const drivePart = part as InternalHardDrive;
         return (
-          <>
-            <Text style={styles.detailText}>Capacity: {hddPart.capacity}</Text>
-            <Text style={styles.detailText}>Type: {hddPart.type}</Text>
-            <Text style={styles.detailText}>Cache: {hddPart.cache}</Text>
-            <Text style={styles.detailText}>Form Factor: {hddPart.form_factor}</Text>
-          </>
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Capacity:</Text>
+              <Text style={styles.detailValue}>{drivePart.capacity}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Type:</Text>
+              <Text style={styles.detailValue}>{drivePart.type}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Cache:</Text>
+              <Text style={styles.detailValue}>{drivePart.cache || 'N/A'}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Form Factor:</Text>
+              <Text style={styles.detailValue}>{drivePart.form_factor}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Interface:</Text>
+              <Text style={styles.detailValue}>{drivePart.interface}</Text>
+            </View>
+          </View>
         );
       case 'monitor':
         const monitorPart = part as Monitor;
         return (
-          <>
-            <Text style={styles.detailText}>Resolution: {monitorPart.resolution}</Text>
-            <Text style={styles.detailText}>Screen Size: {monitorPart.size}</Text>
-            <Text style={styles.detailText}>Refresh Rate: {monitorPart.refresh_rate}</Text>
-            <Text style={styles.detailText}>Panel Type: {monitorPart.panel_type}</Text>
-          </>
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Resolution:</Text>
+              <Text style={styles.detailValue}>{monitorPart.resolution}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Size:</Text>
+              <Text style={styles.detailValue}>{monitorPart.size}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Refresh Rate:</Text>
+              <Text style={styles.detailValue}>{monitorPart.refresh_rate}Hz</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Response Time:</Text>
+              <Text style={styles.detailValue}>{monitorPart.response_time}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Panel Type:</Text>
+              <Text style={styles.detailValue}>{monitorPart.panel_type}</Text>
+            </View>
+          </View>
         );
       default:
         return null;
@@ -861,6 +978,20 @@ const Build = () => {
     );
   };
 
+  const handleGeminiAnalyze = async () => {
+    setGeminiLoading(true);
+    setGeminiError(null);
+    setGeminiAnalysis(null);
+    try {
+      const result = await analyzeBuildWithGemini(buildConfig);
+      setGeminiAnalysis(result);
+    } catch (e: any) {
+      setGeminiError(e.message || 'Gemini API error');
+    } finally {
+      setGeminiLoading(false);
+    }
+  };
+
   const renderBuildSummary = () => {
     console.log('editBuildId:', params.editBuildId);
     console.log('showBuildSummary:', showBuildSummary);
@@ -947,13 +1078,70 @@ const Build = () => {
           </View>
         )}
 
+        {/* Gemini Analysis Section */}
+        <View style={{ marginVertical: 10 }}>
+          <TouchableOpacity
+            style={[styles.saveButton, { backgroundColor: '#ff9800', marginBottom: 8 }]}
+            onPress={handleGeminiAnalyze}
+            disabled={geminiLoading}
+          >
+            <Text style={styles.saveButtonText}>
+              {geminiLoading ? 'Đang phân tích với Gemini...' : 'Phân tích bằng Gemini AI'}
+            </Text>
+          </TouchableOpacity>
+          {geminiError && (
+            <Text style={{ color: 'red', marginBottom: 8 }}>{geminiError}</Text>
+          )}
+          {geminiAnalysis && (
+            <View style={{ backgroundColor: '#fffde7', borderRadius: 8, padding: 12, marginTop: 4 }}>
+              <Markdown
+                style={{
+                  body: { color: '#333', fontSize: 15 },
+                  strong: { fontWeight: 'bold' },
+                  em: { fontStyle: 'italic' },
+                  bullet_list: { marginLeft: 16 },
+                  list_item: { flexDirection: 'row', alignItems: 'flex-start' },
+                  paragraph: { marginBottom: 8 },
+                }}
+              >
+                {stripHtmlTags(geminiAnalysis)}
+              </Markdown>
+            </View>
+          )}
+        </View>
 
+        {/* Gemini Sample Questions */}
+        <View style={{ marginBottom: 10 }}>
+          <Text style={{ fontWeight: 'bold', marginBottom: 6, color: '#1976d2' }}>Câu hỏi mẫu cho Gemini AI:</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row' }}>
+            {geminiSampleQuestions.map((q: string, idx: number) => (
+              <TouchableOpacity
+                key={idx}
+                style={{
+                  backgroundColor: '#e3f2fd',
+                  borderRadius: 16,
+                  paddingVertical: 8,
+                  paddingHorizontal: 14,
+                  marginRight: 8,
+                  borderWidth: 1,
+                  borderColor: '#1976d2',
+                }}
+                onPress={() => {
+                  setAiChatInitial(q);
+                  setShowAIChat(true);
+                }}
+              >
+                <Text style={{ color: '#1976d2', fontSize: 14 }}>{q}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
 
         <View style={styles.totalPrice}>
-          <TouchableOpacity style={[styles.saveButton, {marginBottom: 10, backgroundColor: '#1976d2'}]} onPress={() => setShowAIChat(true)}>
+          <TouchableOpacity style={[styles.saveButton, {marginBottom: 10, backgroundColor: '#1976d2'}]} onPress={() => { setAiChatInitial(null); setShowAIChat(true); }}>
             <Text style={styles.saveButtonText}>Ask Gemini AI</Text>
           </TouchableOpacity>
-  <AIChatBox visible={showAIChat} onClose={() => setShowAIChat(false)} />
+          <AIChatBox visible={showAIChat} onClose={() => setShowAIChat(false)} initialQuestion={aiChatInitial} buildConfig={buildConfig} />
           <Text style={styles.totalPriceText}>Total Price: ${getTotalPrice().toFixed(2)}</Text>
           <View style={styles.actionButtons}>
             <View>
@@ -1181,32 +1369,21 @@ const Build = () => {
                     style={[styles.partCard, isSelected && styles.selectedPartCard]}
                     onPress={() => selectPart(part)}
                   >
-                    <Image 
-                      source={imageLoadErrors[part.name] ? DEFAULT_IMAGE : { 
-                        uri: selectedCategory === 'cpu' 
-                          ? (part as CPU).link_image
-                          : selectedCategory === 'memory' 
-                          ? (part as Memory).image_link
-                          : selectedCategory === 'motherboard'
-                          ? (part as Motherboard).image_link
-                          : selectedCategory === 'videoCard'
-                          ? (part as VideoCard).image_link
-                          : selectedCategory === 'case'
-                          ? (part as Case).image_link
-                          : selectedCategory === 'powerSupply'
-                          ? (part as PowerSupply).image_link
-                          : selectedCategory === 'internalHardDrive'
-                          ? (part as InternalHardDrive).image_link
-                          : selectedCategory === 'monitor'
-                          ? (part as Monitor).image_link
-                          : ''
-                      }}
-                      style={styles.partImage}
-                      onError={() => handleImageError(part.name)}
-                    />
+                    <View style={styles.partImageContainer}>
+                      <Image
+                        source={(() => {
+                          if (imageLoadErrors[part.name]) return DEFAULT_IMAGE;
+                          // Ưu tiên image_link, fallback sang link_image, cuối cùng là ảnh mặc định
+                          const image_link = (part as any).image_link || (part as any).link_image;
+                          return image_link ? { uri: image_link } : DEFAULT_IMAGE;
+                        })()}
+                        style={styles.partImage}
+                        onError={() => handleImageError(part.name)}
+                      />
+                    </View>
                     <View style={styles.partInfo}>
-                      <Text style={styles.partName}>{part.name}</Text>
-                      <Text style={styles.partPrice}>${part.price}</Text>
+                      <Text style={styles.partName} numberOfLines={2}>{part.name}</Text>
+                      <Text style={styles.partPrice}>${part.price.toFixed(2)}</Text>
                       {renderPartDetails(part, selectedCategory)}
                       {isSelected && (
                         <Text style={styles.selectedLabel}>✓ Selected</Text>
@@ -1346,14 +1523,14 @@ const styles = StyleSheet.create({
   partCard: {
     flexDirection: 'row',
     backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: 16,
     padding: 15,
+    marginBottom: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
     borderWidth: 1,
     borderColor: '#e3e3e3',
   },
@@ -1363,14 +1540,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fff8',
   },
   partImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    backgroundColor: '#f0f0f0',
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
   },
   partInfo: {
     flex: 1,
-    marginLeft: 15,
+    paddingLeft: 12,
     justifyContent: 'center',
   },
   partName: {
@@ -1891,7 +2067,57 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  detailsContainer: {
+    marginTop: 4,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 8,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    marginBottom: 3,
+  },
+  detailLabel: {
+    fontSize: 13,
+    color: '#607d8b',
+    width: 100,
+    fontWeight: '600',
+  },
+  detailValue: {
+    fontSize: 13,
+    color: '#333',
+    flex: 1,
+  },
+  partImageContainer: {
+    width: 110,
+    height: 110,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#f1f3f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
 });
+
+// Hàm loại bỏ các thẻ HTML đơn giản
+function stripHtmlTags(str: string): string {
+  if (!str) return '';
+  return str.replace(/<[^>]+>/g, '');
+}
+
+const geminiSampleQuestions: string[] = [
+  'Cấu hình này có chơi được game AAA không?',
+  'Có nên nâng cấp RAM cho cấu hình này không?',
+  'Cấu hình này phù hợp cho công việc đồ họa không?',
+  'Nguồn máy tính này có đủ công suất không?',
+  'Có linh kiện nào bị nghẽn cổ chai (bottleneck) không?',
+  'Tư vấn nâng cấp CPU hoặc GPU cho cấu hình này?',
+  'Cấu hình này có phù hợp để livestream không?',
+  'Có đề xuất nào để tối ưu hiệu năng/giá thành không?',
+  'Cấu hình này có tương thích tốt với Windows 11 không?',
+  'Tư vấn màn hình phù hợp cho cấu hình này?'
+];
 
 
 export default Build;

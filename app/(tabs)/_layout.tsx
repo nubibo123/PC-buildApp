@@ -1,8 +1,21 @@
 // app/(tabs)/_layout.tsx
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
+import { useAuth } from '../../lib/AuthContext';
 
 export default function TabLayout() {
+  const { user, isLoading } = useAuth();
+  
+  // Nếu đang loading, không hiển thị gì
+  if (isLoading) {
+    return null;
+  }
+  
+  // Nếu chưa đăng nhập, redirect về login
+  if (!user) {
+    return <Redirect href="/(auth)/login" />;
+  }
+  
   return (
     <Tabs 
       screenOptions={{ 

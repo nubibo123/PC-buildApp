@@ -1,4 +1,5 @@
-import { Stack } from 'expo-router';
+import { useAuth } from '@/lib/AuthContext';
+import { Redirect, Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -86,6 +87,13 @@ const CPU_SERIES = [
 ];
 
 const PCParts = () => {
+  const { user } = useAuth();
+  
+  // Redirect to login if user is not authenticated
+  if (!user) {
+    return <Redirect href="/(auth)/login" />;
+  }
+  
   const [selectedCategory, setSelectedCategory] = useState<string>('cpu');
   const [parts, setParts] = useState<PartData[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -323,6 +331,41 @@ const PCParts = () => {
             gpuPart.chipset.toLowerCase().includes(query) ||
             gpuPart.memory.toString().includes(query)
           );
+        case 'case':
+          const casePart = part as Case;
+          return (
+            matchName ||
+            casePart.type.toLowerCase().includes(query) ||
+            casePart.color.toLowerCase().includes(query) ||
+            (casePart.side_panel && casePart.side_panel.toLowerCase().includes(query))
+          );
+        case 'power-supply':
+          const psuPart = part as PowerSupply;
+          return (
+            matchName ||
+            psuPart.type.toLowerCase().includes(query) ||
+            psuPart.efficiency.toLowerCase().includes(query) ||
+            psuPart.wattage.toString().includes(query) ||
+            psuPart.modular.toLowerCase().includes(query)
+          );
+        case 'internal-hard-drive':
+          const drivePart = part as InternalHardDrive;
+          return (
+            matchName ||
+            drivePart.type.toLowerCase().includes(query) ||
+            drivePart.capacity.toLowerCase().includes(query) ||
+            drivePart.form_factor.toLowerCase().includes(query) ||
+            drivePart.interface.toLowerCase().includes(query)
+          );
+        case 'monitor':
+          const monitorPart = part as Monitor;
+          return (
+            matchName ||
+            monitorPart.resolution.toLowerCase().includes(query) ||
+            monitorPart.size.toLowerCase().includes(query) ||
+            monitorPart.panel_type.toLowerCase().includes(query) ||
+            monitorPart.refresh_rate.toString().includes(query)
+          );
         default:
           return matchName;
       }
@@ -419,6 +462,102 @@ const PCParts = () => {
             </View>
           </View>
         );
+      case 'case':
+        const casePart = part as Case;
+        return (
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Type:</Text>
+              <Text style={styles.detailValue}>{casePart.type}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Color:</Text>
+              <Text style={styles.detailValue}>{casePart.color}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>PSU:</Text>
+              <Text style={styles.detailValue}>{casePart.psu || 'None'}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Side Panel:</Text>
+              <Text style={styles.detailValue}>{casePart.side_panel}</Text>
+            </View>
+          </View>
+        );
+      case 'power-supply':
+        const psuPart = part as PowerSupply;
+        return (
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Type:</Text>
+              <Text style={styles.detailValue}>{psuPart.type}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Efficiency:</Text>
+              <Text style={styles.detailValue}>{psuPart.efficiency}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Wattage:</Text>
+              <Text style={styles.detailValue}>{psuPart.wattage}W</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Modular:</Text>
+              <Text style={styles.detailValue}>{psuPart.modular}</Text>
+            </View>
+          </View>
+        );
+      case 'internal-hard-drive':
+        const drivePart = part as InternalHardDrive;
+        return (
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Capacity:</Text>
+              <Text style={styles.detailValue}>{drivePart.capacity}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Type:</Text>
+              <Text style={styles.detailValue}>{drivePart.type}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Cache:</Text>
+              <Text style={styles.detailValue}>{drivePart.cache || 'N/A'}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Form Factor:</Text>
+              <Text style={styles.detailValue}>{drivePart.form_factor}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Interface:</Text>
+              <Text style={styles.detailValue}>{drivePart.interface}</Text>
+            </View>
+          </View>
+        );
+      case 'monitor':
+        const monitorPart = part as Monitor;
+        return (
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Resolution:</Text>
+              <Text style={styles.detailValue}>{monitorPart.resolution}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Size:</Text>
+              <Text style={styles.detailValue}>{monitorPart.size}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Refresh Rate:</Text>
+              <Text style={styles.detailValue}>{monitorPart.refresh_rate}Hz</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Response Time:</Text>
+              <Text style={styles.detailValue}>{monitorPart.response_time}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Panel Type:</Text>
+              <Text style={styles.detailValue}>{monitorPart.panel_type}</Text>
+            </View>
+          </View>
+        );
       default:
         return null;
     }
@@ -431,9 +570,11 @@ const PCParts = () => {
 
   const renderPartItem = ({ item: part }: { item: PartData }) => {
     const hasImageError = imageLoadErrors[part.name];
-    // Use link_image if available, fallback to default image for all categories (including CPU)
-    const imageSource = (!hasImageError && (part as any).link_image)
-      ? { uri: (part as any).link_image }
+    // Ưu tiên lấy image_link cho mọi loại part (memory, case, power supply, drive, ...)
+    // Nếu không có image_link thì fallback sang link_image hoặc DEFAULT_IMAGE
+    const image_link = (part as any).image_link || (part as any).link_image;
+    const imageSource = (!hasImageError && image_link)
+      ? { uri: image_link }
       : DEFAULT_IMAGE;
 
     return (

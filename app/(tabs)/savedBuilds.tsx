@@ -1,9 +1,10 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { Button, Card, Layout, Modal, Spinner, Text } from '@ui-kitten/components';
-import { router, Stack } from 'expo-router';
+import { Redirect, router, Stack } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Image, ScrollView, StyleSheet, View } from 'react-native';
 import { Case, CPU, InternalHardDrive, Memory, Monitor, Motherboard, PowerSupply, VideoCard } from '../../data/csvData';
+import { useAuth } from '../../lib/AuthContext';
 import { deleteBuild, getUserBuilds, SavedBuild } from '../../lib/buildService';
 import { auth } from '../../lib/firebase';
 
@@ -30,6 +31,13 @@ interface Build {
   };
 
 export default function SavedBuildsScreen() {
+  const { user } = useAuth();
+  
+  // Redirect to login if user is not authenticated
+  if (!user) {
+    return <Redirect href="/(auth)/login" />;
+  }
+  
   const [savedBuilds, setSavedBuilds] = useState<SavedBuild[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);

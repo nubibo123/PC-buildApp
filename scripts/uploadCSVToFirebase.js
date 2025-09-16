@@ -3,9 +3,14 @@ import { parse } from "csv-parse/sync";
 import admin from "firebase-admin";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from 'url';
 
-// Initialize Firebase with service account
-const serviceAccount = JSON.parse(fs.readFileSync("../tttt-ed355-firebase-adminsdk-fbsvc-3946310111.json", "utf8"));
+
+// Resolve the service account path relative to this script's directory (ESM compatible)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const serviceAccountPath = path.resolve(__dirname, "../tttt-ed355-firebase-adminsdk-fbsvc-3946310111.json");
+const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -14,8 +19,8 @@ admin.initializeApp({
 
 const db = admin.database();
 
-// Path to CSV folder
-const csvFolder = "../csv";
+// Path to CSV folder (always relative to this script)
+const csvFolder = path.resolve(__dirname, "../csv");
 
 // Function to upload individual CSV file
 async function uploadCsvFile(filePath, category) {

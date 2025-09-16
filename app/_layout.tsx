@@ -6,9 +6,9 @@ import { AuthProvider } from "../lib/AuthContext";
 export default function RootLayout() {
   return (
     <ApplicationProvider {...eva} theme={eva.light}>
-    <AuthProvider>
-      <Stack screenOptions={{headerShown:false}} />
-    </AuthProvider>
+      <AuthProvider>
+        <Stack screenOptions={{headerShown:false}} />
+      </AuthProvider>
     </ApplicationProvider>
   );
 }

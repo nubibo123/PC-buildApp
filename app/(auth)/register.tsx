@@ -2,14 +2,22 @@ import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '@/lib/cloudinar
 import { auth, database } from '@/lib/firebase';
 import { Avatar, Button, Datepicker, Input, Layout, Text } from '@ui-kitten/components';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { ref, set } from 'firebase/database';
 import React, { useState } from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
+import { useAuth } from '../../lib/AuthContext';
 
 export default function SignUpScreen() {
+  const { user, isLoading } = useAuth();
   const router = useRouter();
+  
+  // Nếu đã đăng nhập, redirect về tabs
+  if (user && !isLoading) {
+    return <Redirect href="/(tabs)" />;
+  }
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

@@ -1,6 +1,4 @@
 // yUML Use Case Diagram for PC Build Management
-[User]-(Login)
-[User]-(Sign Up)
 [User]-(Create Build)
 [User]-(Edit Build)
 [User]-(Delete Build)
@@ -10,7 +8,6 @@
 [User]-(Vote Build)
 [User]-(Comment Build)
 [User]-(Share Build)
-(Login)-<<include>>-(Sign Up)
 (Create Build)-<<include>>-(Save Build)
 (Edit Build)-<<include>>-(Save Build)
 (Analyze Build)-<<include>>-(View Build)

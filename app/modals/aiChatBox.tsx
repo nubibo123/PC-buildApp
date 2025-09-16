@@ -1,17 +1,52 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import Markdown from 'react-native-markdown-display';
 import { chatWithGemini } from '../../lib/geminiApi';
 
 interface AIChatBoxProps {
   visible: boolean;
   onClose: () => void;
+  initialQuestion?: string | null;
+  buildConfig?: any;
 }
 
-export default function AIChatBox({ visible, onClose }: AIChatBoxProps) {
+export default function AIChatBox({ visible, onClose, initialQuestion, buildConfig }: AIChatBoxProps) {
   const [messages, setMessages] = useState<{ role: 'user' | 'model'; text: string }[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Gửi câu hỏi mẫu khi mở chat
+  useEffect(() => {
+    if (visible && initialQuestion) {
+      handleSendInitialQuestion(initialQuestion);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, initialQuestion]);
+
+  const handleSendInitialQuestion = async (question: string) => {
+    setMessages([{ role: 'user', text: question }]);
+    setLoading(true);
+    setError('');
+    try {
+      let content = question;
+      if (buildConfig) {
+        content += '\n\nCấu hình PC:\n' + JSON.stringify(buildConfig, null, 2);
+      }
+      const reply = await chatWithGemini([
+        { role: 'user', parts: [content] }
+      ]);
+      setMessages(msgs => [
+        { role: 'user', text: question },
+        { role: 'model', text: reply }
+      ]);
+      setInput('');
+    } catch (e: any) {
+      setError(e.message || 'Error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -19,9 +54,13 @@ export default function AIChatBox({ visible, onClose }: AIChatBoxProps) {
     setLoading(true);
     setError('');
     try {
+      let content = input;
+      if (buildConfig) {
+        content += '\n\nCấu hình PC:\n' + JSON.stringify(buildConfig, null, 2);
+      }
       const reply = await chatWithGemini([
         ...messages.map(m => ({ role: m.role, parts: [m.text] })),
-        { role: 'user', parts: [input] }
+        { role: 'user', parts: [content] }
       ]);
       setMessages(msgs => [...msgs, { role: 'model', text: reply }]);
       setInput('');
@@ -32,6 +71,12 @@ export default function AIChatBox({ visible, onClose }: AIChatBoxProps) {
     }
   };
 
+  // Hàm loại bỏ các thẻ HTML đơn giản
+  function stripHtmlTags(str: string): string {
+    if (!str) return '';
+    return str.replace(/<[^>]+>/g, '');
+  }
+
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={styles.container}>
@@ -39,7 +84,27 @@ export default function AIChatBox({ visible, onClose }: AIChatBoxProps) {
         <ScrollView style={styles.chatArea} contentContainerStyle={{ paddingBottom: 20 }}>
           {messages.map((msg, idx) => (
             <View key={idx} style={[styles.msgBubble, msg.role === 'user' ? styles.userBubble : styles.modelBubble]}>
-              <Text style={styles.msgText}>{msg.text}</Text>
+              {msg.role === 'model' ? (
+                <Markdown
+                  style={{
+                    body: { color: '#333', fontSize: 15 },
+                    strong: { fontWeight: 'bold' },
+                    em: { fontStyle: 'italic' },
+                    bullet_list: { marginLeft: 16 },
+                    list_item: { flexDirection: 'row', alignItems: 'flex-start' },
+                    paragraph: { marginBottom: 8 },
+                  }}
+                >
+                  {stripHtmlTags(msg.text)}
+                </Markdown>
+              ) : (
+                <TextInput
+                  style={[styles.msgText, { color: '#1976d2', fontWeight: 'bold', backgroundColor: 'transparent' }]}
+                  value={msg.text}
+                  editable={false}
+                  multiline
+                />
+              )}
             </View>
           ))}
           {loading && <ActivityIndicator size="small" color="#1976d2" style={{ marginTop: 10 }} />}
@@ -50,12 +115,18 @@ export default function AIChatBox({ visible, onClose }: AIChatBoxProps) {
             style={styles.input}
             value={input}
             onChangeText={setInput}
-            placeholder="Type your question..."
+            placeholder="Nhập câu hỏi của bạn..." // Vietnamese placeholder
             editable={!loading}
             onSubmitEditing={sendMessage}
+            autoCapitalize="sentences"
+            autoCorrect={true}
+            keyboardType="default"
+            // Ensure Unicode support
+            inputMode="text"
+            // If you want to force Unicode, you can add maxLength or selectionColor, but React Native TextInput supports Unicode by default
           />
           <TouchableOpacity style={styles.sendBtn} onPress={sendMessage} disabled={loading}>
-            <Text style={styles.sendBtnText}>Send</Text>
+            <Text style={styles.sendBtnText}>Gửi</Text>
           </TouchableOpacity>
         </View>
         <TouchableOpacity style={styles.closeBtn} onPress={onClose}>

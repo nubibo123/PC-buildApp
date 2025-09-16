@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../lib/AuthContext';
@@ -17,6 +17,12 @@ interface BuildConfig {
 
 export default function CreatePost() {
   const { user } = useAuth();
+  
+  // Redirect to login if user is not authenticated
+  if (!user) {
+    return <Redirect href="/(auth)/login" />;
+  }
+  
   const router = useRouter();
   const params = useLocalSearchParams();
   const buildConfig: BuildConfiguration | null = params.buildConfig ? JSON.parse(params.buildConfig as string) : null;

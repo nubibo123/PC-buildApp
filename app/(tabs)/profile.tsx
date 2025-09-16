@@ -2,7 +2,7 @@ import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '@/lib/cloudinar
 import { useFocusEffect } from '@react-navigation/native';
 import { Avatar, Button, Card, Divider, Input, Layout, Modal, Text } from '@ui-kitten/components';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword, updateProfile } from 'firebase/auth';
 import { ref, update } from 'firebase/database';
 import React, { useState } from 'react';
@@ -14,6 +14,12 @@ import { BuildConfiguration } from './build';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
+  
+  // Redirect to login if user is not authenticated
+  if (!user) {
+    return <Redirect href="/(auth)/login" />;
+  }
+  
   const router = useRouter();
   const [visible, setVisible] = useState(false);
   const [displayName, setDisplayName] = useState(user?.displayName || '');
@@ -219,7 +225,7 @@ export default function ProfileScreen() {
   const handleLogout = async () => {
     try {
       await logout();
-      router.replace('/login');
+      router.replace('/(auth)/login');
     } catch (error: any) {
       console.error('Logout error:', error);
     }

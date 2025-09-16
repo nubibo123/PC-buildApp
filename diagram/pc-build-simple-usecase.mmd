@@ -1,0 +1,34 @@
+---
+config:
+  layout: fixed
+  theme: base
+  themeVariables:
+    fontSize: "16px"
+---
+flowchart TD
+ subgraph PCBuildSystem["<b><font size='6'>PC Build App System</font></b>"]
+        Register("Register/Login")
+        Browse("Browse PC Parts")
+        BuildPC("Build PC Configuration")
+        SaveBuild("Save Build")
+        CreatePost("Create Post")
+        ViewPosts("View Posts")
+        Comment("Comment on Post")
+        Vote("Vote on Post")
+        AIAnalysis("AI Build Analysis")
+        AIChat("AI Chat Support")
+        StoreData("Store User Data")
+        StoreBuild("Store Builds")
+        StorePosts("Store Posts")
+  end
+  User["User"]:::actor --> Register & Browse & BuildPC & SaveBuild & CreatePost & ViewPosts & Comment & Vote & AIChat
+  AI["AI Assistant"]:::actor --> AIAnalysis & AIChat
+  Firebase["Firebase"]:::actor --> StoreData & StoreBuild & StorePosts
+  BuildPC -. include .-> Browse
+  SaveBuild -. include .-> BuildPC
+  CreatePost -. include .-> SaveBuild
+  AIAnalysis -. include .-> BuildPC
+  Vote -. extend .-> ViewPosts
+  Comment -. extend .-> ViewPosts
+
+  classDef actor stroke-width:2px,stroke:#333,fill:#fff;

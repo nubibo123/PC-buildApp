@@ -1,6 +1,6 @@
 import { get, push, ref, remove, set, update } from 'firebase/database';
 import { BuildConfiguration } from '../app/(tabs)/build';
-import { database } from './firebase';
+import { auth, database } from './firebase';
 
 import { UserProfile } from './buildService';
 
@@ -115,6 +115,11 @@ export const getPostsByUserId = async (userId: string): Promise<Post[]> => {
 };
 
 export const getAllPosts = async (): Promise<Post[]> => {
+  // Check if user is authenticated
+  if (!auth.currentUser) {
+    throw new Error('User not authenticated');
+  }
+  
   const postsRef = ref(database, 'posts');
   const snapshot = await get(postsRef);
   const posts: Post[] = [];

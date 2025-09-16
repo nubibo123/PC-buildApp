@@ -145,7 +145,7 @@ const mapCaseData = (item: any): Case => ({
   color: item.color || '',
   psu: item.psu || '',
   side_panel: item.side_panel || '',
-  image_link: processImageLink(item.link_image),
+  image_link: processImageLink(item.image_link),
 });
 
 const mapPowerSupplyData = (item: any): PowerSupply => ({
@@ -155,7 +155,7 @@ const mapPowerSupplyData = (item: any): PowerSupply => ({
   efficiency: item.efficiency || '',
   wattage: Number(item.wattage) || 0,
   modular: item.modular || '',
-  image_link: processImageLink(item.link_image),
+  image_link: processImageLink(item.image_link),
 });
 
 const mapInternalHardDriveData = (item: any): InternalHardDrive => ({
@@ -166,7 +166,7 @@ const mapInternalHardDriveData = (item: any): InternalHardDrive => ({
   cache: item.cache || '',
   form_factor: item.form_factor || '',
   interface: item.interface || '',
-  image_link: processImageLink(item.link_image),
+  image_link: processImageLink(item.image_link),
 });
 
 const mapMonitorData = (item: any): Monitor => ({

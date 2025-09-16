@@ -1,18 +1,25 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar, Button, Input, Layout, Spinner, Text } from '@ui-kitten/components';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { ref, update } from 'firebase/database';
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useAuth } from '../../lib/AuthContext';
 import { auth, database } from '../../lib/firebase';
 
 export default function Login() {
+  const { user, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
+
+  // Nếu đã đăng nhập, redirect về tabs
+  if (user && !isLoading) {
+    return <Redirect href="/(tabs)" />;
+  }
 
   const toggleSecureEntry = () => {
     setSecureTextEntry(!secureTextEntry);

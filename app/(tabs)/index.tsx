@@ -10,7 +10,22 @@ import { FlatList, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
 export default function HomeScreen() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  
+  // Redirect to login if user is not authenticated
+  if (!user) {
+    return <Redirect href="/(auth)/login" />;
+  }
+  
+  // Show loading if auth is still loading
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+  
   const [builds, setBuilds] = useState<SavedBuild[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [selectedBuild, setSelectedBuild] = useState<string | null>(null);
@@ -26,6 +41,12 @@ export default function HomeScreen() {
   const [detailLoading, setDetailLoading] = useState(false);
 
   const fetchBuilds = async () => {
+    // Chỉ fetch khi user đã authenticated và có uid
+    if (!user || !user.uid) {
+      console.log('User not authenticated, skipping fetchBuilds');
+      return;
+    }
+    
     try {
       const allBuilds = await getAllBuilds();
       setBuilds(allBuilds);
@@ -35,6 +56,12 @@ export default function HomeScreen() {
   };
 
   const fetchPosts = async () => {
+    // Chỉ fetch khi user đã authenticated và có uid
+    if (!user || !user.uid) {
+      console.log('User not authenticated, skipping fetchPosts');
+      return;
+    }
+    
     try {
       const allPosts = await getAllPosts();
       // Load comments for each post
@@ -51,21 +78,38 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (user) {
-        fetchBuilds();
-        fetchPosts();
-      }
-    }, [user])
+      const loadData = async () => {
+        if (user && user.uid && !isLoading) {
+          // Small delay to ensure Firebase auth is fully initialized
+          await new Promise(resolve => setTimeout(resolve, 100));
+          fetchBuilds();
+          fetchPosts();
+        }
+      };
+      
+      loadData();
+    }, [user, user?.uid, isLoading])
   );
 
   useEffect(() => {
-    if (user) {
-      fetchBuilds();
-      fetchPosts();
-    }
-  }, []);
+    const initializeData = async () => {
+      if (user && user.uid && !isLoading) {
+        // Small delay to ensure Firebase auth is fully initialized
+        await new Promise(resolve => setTimeout(resolve, 100));
+        fetchBuilds();
+        fetchPosts();
+      }
+    };
+    
+    initializeData();
+  }, [user, user?.uid, isLoading]);
 
   const handleRefresh = async () => {
+    if (!user || !user.uid) {
+      console.log('User not authenticated, skipping refresh');
+      return;
+    }
+    
     setRefreshing(true);
     await fetchBuilds();
     setRefreshing(false);
