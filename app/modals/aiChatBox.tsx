@@ -11,7 +11,7 @@ interface AIChatBoxProps {
 }
 
 export default function AIChatBox({ visible, onClose, initialQuestion, buildConfig }: AIChatBoxProps) {
-  const [messages, setMessages] = useState<{ role: 'user' | 'model'; text: string }[]>([]);
+  const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; text: string }[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -34,11 +34,11 @@ export default function AIChatBox({ visible, onClose, initialQuestion, buildConf
   content += '\n\nPC Build Configuration:\n' + JSON.stringify(buildConfig, null, 2);
       }
       const reply = await chatWithGemini([
-        { role: 'user', parts: [content] }
+        { role: 'user', content: content }
       ]);
       setMessages(msgs => [
         { role: 'user', text: question },
-        { role: 'model', text: reply }
+        { role: 'assistant', text: reply }
       ]);
       setInput('');
     } catch (e: any) {
@@ -59,10 +59,10 @@ export default function AIChatBox({ visible, onClose, initialQuestion, buildConf
   content += '\n\nPC Build Configuration:\n' + JSON.stringify(buildConfig, null, 2);
       }
       const reply = await chatWithGemini([
-        ...messages.map(m => ({ role: m.role, parts: [m.text] })),
-        { role: 'user', parts: [content] }
+        ...messages.map(m => ({ role: m.role, content: m.text })),
+        { role: 'user', content: content }
       ]);
-      setMessages(msgs => [...msgs, { role: 'model', text: reply }]);
+      setMessages(msgs => [...msgs, { role: 'assistant', text: reply }]);
       setInput('');
     } catch (e: any) {
       setError(e.message || 'Error');
@@ -84,7 +84,7 @@ export default function AIChatBox({ visible, onClose, initialQuestion, buildConf
         <ScrollView style={styles.chatArea} contentContainerStyle={{ paddingBottom: 20 }}>
           {messages.map((msg, idx) => (
             <View key={idx} style={[styles.msgBubble, msg.role === 'user' ? styles.userBubble : styles.modelBubble]}>
-              {msg.role === 'model' ? (
+              {msg.role === 'assistant' ? (
                 <Markdown
                   style={{
                     body: { color: '#333', fontSize: 15 },

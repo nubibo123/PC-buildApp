@@ -46,6 +46,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="scanPart"
+        options={{
+          title: 'Scan Part',
+          tabBarIcon: ({ color, size }) => <Ionicons name="scan" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="savedBuilds"
         options={{
           title: 'Saved Builds',

@@ -1,68 +1,100 @@
 // gemini.ts
-// Gemini API client in TypeScript
-// ⚠️ Do not commit real API keys to GitHub
+// AI API client - OpenRouter
+// ⚠️ Get your API key from: https://openrouter.ai/settings/keys
 
-const GEMINI_API_KEY: string = 'AIzaSyD-uoZHcLtxm21Y_c8UILInYUYMn54d9zA'; 
-const GEMINI_API_URL: string =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' +
-  GEMINI_API_KEY;
+const OPENROUTER_API_KEY: string = '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'; // Replace with your OpenRouter API key
+const OPENROUTER_API_URL: string = 'https://openrouter.ai/api/v1/chat/completions';
 
-// Define message type
+// Define message type (OpenAI-compatible format)
 export interface GeminiMessage {
-  role: 'user' | 'model';
-  parts: string[];
+  role: 'user' | 'assistant' | 'system';
+  content: string;
 }
 
 /**
- * Chat with Gemini model
+ * Chat with AI model via OpenRouter
  */
 export async function chatWithGemini(messages: GeminiMessage[]): Promise<string> {
-  const body = {
-    contents: messages.map(m => ({
-      role: m.role,
-      parts: m.parts.map(text => ({ text })),
-    })),
-  };
-
-  const res = await fetch(GEMINI_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    let errorMsg = 'Failed to call Gemini API';
-    try {
-      const errData = await res.json();
-      if (errData?.error?.message) {
-        errorMsg += ': ' + errData.error.message;
-      }
-    } catch {
-      // ignore
-    }
-    throw new Error(errorMsg);
+  // Validate messages
+  if (!messages || messages.length === 0) {
+    throw new Error('Messages array cannot be empty');
+  }
+  
+  // Filter out empty messages and ensure content is not empty
+  const validMessages = messages.filter(m => m.content && m.content.trim().length > 0);
+  
+  if (validMessages.length === 0) {
+    throw new Error('At least one message must have non-empty content');
   }
 
-  const data = await res.json();
-  const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  console.log('[Gemini Answer]', answer); // Log Gemini's answer
-  return answer;
+  // Try multiple free models in order of preference
+  const freeModels = [
+    'meta-llama/llama-3.2-3b-instruct:free',
+    'google/gemini-flash-1.5:free',
+    'mistralai/mistral-7b-instruct:free',
+    'nousresearch/hermes-3-llama-3.1-405b:free'
+  ];
+
+  let lastError = null;
+
+  for (const model of freeModels) {
+    try {
+      const body = {
+        model: model,
+        messages: validMessages,
+      };
+
+      const res = await fetch(OPENROUTER_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+          'HTTP-Referer': 'https://pc-build-assistant.app',
+          'X-Title': 'PC Build Assistant',
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        lastError = errData?.error?.message || `HTTP ${res.status}`;
+        console.log(`[OpenRouter] Model ${model} failed: ${lastError}`);
+        continue; // Try next model
+      }
+
+      const data = await res.json();
+      const answer = data.choices?.[0]?.message?.content || '';
+      console.log(`[OpenRouter] Success with model: ${model}`);
+      console.log('[AI Answer]', answer);
+      return answer;
+
+    } catch (error: any) {
+      lastError = error.message;
+      console.log(`[OpenRouter] Model ${model} error: ${lastError}`);
+      continue; // Try next model
+    }
+  }
+
+  // If all models failed
+  throw new Error(`All models failed. Last error: ${lastError || 'Unknown error'}`);
 }
 
 /**
- * List available Gemini models and their supported methods.
+ * List available models on OpenRouter
  */
 export async function listGeminiModels(): Promise<any[]> {
-  const url =
-    'https://generativelanguage.googleapis.com/v1/models?key=' + GEMINI_API_KEY;
+  const url = 'https://openrouter.ai/api/v1/models';
 
   const res = await fetch(url, {
     method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+    },
   });
 
   if (!res.ok) {
-    let errorMsg = 'Failed to list Gemini models';
+    let errorMsg = 'Failed to list OpenRouter models';
     try {
       const errData = await res.json();
       if (errData?.error?.message) {
@@ -75,7 +107,7 @@ export async function listGeminiModels(): Promise<any[]> {
   }
 
   const data = await res.json();
-  return data.models || [];
+  return data.data || [];
 }
 
 /**
@@ -96,13 +128,16 @@ export async function analyzeBuildWithGemini(
   // Format build data for AI
   const buildInfo = JSON.stringify(buildConfig, null, 2);
 
-  // Send to Gemini
+  // Validate that we have content
+  if (!buildInfo || buildInfo.trim() === '{}' || buildInfo.trim() === 'null') {
+    throw new Error('Build configuration is empty or invalid');
+  }
+
+  // Send to OpenRouter
   const messages: GeminiMessage[] = [
     {
-      role: 'user', // Explicitly type as 'user'
-      parts: [
-        `${prompt}\n\nBuild configuration:\n${buildInfo}`
-      ]
+      role: 'user',
+      content: `${prompt}\n\nBuild configuration:\n${buildInfo}`
     }
   ];
   return await chatWithGemini(messages);
