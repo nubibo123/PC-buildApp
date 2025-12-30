@@ -154,11 +154,25 @@ const Build = () => {
     };
   });
 
+  // Reusable empty build configuration
+  const EMPTY_BUILD_CONFIG: BuildConfiguration = {
+    cpu: null,
+    memory: null,
+    motherboard: null,
+    videoCard: null,
+    case: null,
+    powerSupply: null,
+    internalHardDrive: null,
+    monitor: null,
+  };
+
   // Fetch lại chi tiết các component khi vào edit build
   useEffect(() => {
     if (params.initialConfig) {
       const config = JSON.parse(params.initialConfig as string);
       const fetchAll = async () => {
+        // Clear previous build configuration before applying a new one
+        setBuildConfig(EMPTY_BUILD_CONFIG);
         const result: Partial<BuildConfiguration> = {};
         // CPU
         if (config.cpu) {
@@ -200,7 +214,8 @@ const Build = () => {
           const monitors = await loadMonitorData();
           result.monitor = monitors.find((m) => m.name === config.monitor.name) || config.monitor;
         }
-        setBuildConfig((prev) => ({ ...prev, ...result }));
+        // Apply only the fetched parts on a clean slate
+        setBuildConfig(() => ({ ...EMPTY_BUILD_CONFIG, ...result }));
       };
       fetchAll();
     }
@@ -262,7 +277,7 @@ const Build = () => {
       setCompatibilityMessage(
         isCompatible 
           ? '✅ CPU and motherboard sockets are compatible'
-          : `❌ Socket không tương thích: CPU (${cpuSocket || 'N/A'}) - Motherboard (${motherboardSocket || 'N/A'})`
+          : `❌ Socket incompatible: CPU (${cpuSocket || 'N/A'}) - Motherboard (${motherboardSocket || 'N/A'})`
       );
     } else {
       setCompatibilityMessage('');
@@ -573,16 +588,25 @@ const Build = () => {
   };
 
   const getTotalPrice = () => {
+    const toNum = (v: any) => {
+      const n = typeof v === 'number' ? v : Number(v);
+      return isFinite(n) && !isNaN(n) ? n : 0;
+    };
     let total = 0;
-    if (buildConfig.cpu) total += buildConfig.cpu.price;
-    if (buildConfig.memory) total += buildConfig.memory.price;
-    if (buildConfig.motherboard) total += buildConfig.motherboard.price;
-    if (buildConfig.videoCard) total += buildConfig.videoCard.price;
-    if (buildConfig.case) total += buildConfig.case.price;
-    if (buildConfig.powerSupply) total += buildConfig.powerSupply.price;
-    if (buildConfig.internalHardDrive) total += buildConfig.internalHardDrive.price;
-    if (buildConfig.monitor) total += buildConfig.monitor.price;
+    if (buildConfig.cpu) total += toNum(buildConfig.cpu.price);
+    if (buildConfig.memory) total += toNum(buildConfig.memory.price);
+    if (buildConfig.motherboard) total += toNum(buildConfig.motherboard.price);
+    if (buildConfig.videoCard) total += toNum(buildConfig.videoCard.price);
+    if (buildConfig.case) total += toNum(buildConfig.case.price);
+    if (buildConfig.powerSupply) total += toNum(buildConfig.powerSupply.price);
+    if (buildConfig.internalHardDrive) total += toNum(buildConfig.internalHardDrive.price);
+    if (buildConfig.monitor) total += toNum(buildConfig.monitor.price);
     return total;
+  };
+
+  const isSocketCompatible = () => {
+    if (!buildConfig.cpu || !buildConfig.motherboard) return true;
+    return checkSocketCompatibility(buildConfig.cpu, buildConfig.motherboard);
   };
 
   const getSelectedPartForCategory = (categoryId: string) => {
@@ -1019,7 +1043,7 @@ const Build = () => {
               {selectedPart ? (
                 <View style={styles.selectedPartInfo}>
                   <Text style={styles.selectedPartName}>{selectedPart.name}</Text>
-                  <Text style={styles.selectedPartPrice}>${selectedPart.price}</Text>
+                  <Text style={styles.selectedPartPrice}>${(typeof selectedPart.price === 'number' ? selectedPart.price : Number(selectedPart.price) || 0).toFixed(2)}</Text>
                 </View>
               ) : (
                 <Text style={styles.noPartSelected}>No part selected</Text>
@@ -1033,6 +1057,11 @@ const Build = () => {
             <Text style={styles.compatibilityText}>{compatibilityMessage}</Text>
           </View>
         )}
+
+        {/* Total price above AI Analyst */}
+        <View style={{ marginBottom: 8 }}>
+          <Text style={styles.totalPriceText}>Total Price: ${getTotalPrice().toFixed(2)}</Text>
+        </View>
 
         {/* AI Analyst Section */}
         {analysisResult && (
@@ -1065,7 +1094,7 @@ const Build = () => {
             </View>
             <View style={styles.powerContainer}>
               <Text style={styles.powerEstimate}>Estimated Power: {analysisResult.powerConsumption.estimated}W</Text>
-              <Text style={styles.powerRecommendation}>{analysisResult.powerConsumption.recommendation.replace('Khuyến nghị nguồn', 'Recommended PSU').replace('hoặc cao hơn', 'or higher').replace('Nguồn hiện tại', 'Current PSU').replace('Tốt', 'Good').replace('Chấp nhận được', 'Acceptable').replace('Không đủ', 'Insufficient')}</Text>
+              <Text style={styles.powerRecommendation}>{analysisResult.powerConsumption.recommendation}</Text>
             </View>
             {analysisResult.recommendations.length > 0 && (
               <View style={styles.recommendationsContainer}>
@@ -1086,7 +1115,7 @@ const Build = () => {
             disabled={geminiLoading}
           >
             <Text style={styles.saveButtonText}>
-              {geminiLoading ? 'Đang phân tích với Gemini...' : 'Phân tích bằng Gemini AI'}
+              {geminiLoading ? 'Analyzing with Gemini...' : 'Analyze with Gemini AI'}
             </Text>
           </TouchableOpacity>
           {geminiError && (
@@ -1112,7 +1141,7 @@ const Build = () => {
 
         {/* Gemini Sample Questions */}
         <View style={{ marginBottom: 10 }}>
-          <Text style={{ fontWeight: 'bold', marginBottom: 6, color: '#1976d2' }}>Câu hỏi mẫu cho Gemini AI:</Text>
+          <Text style={{ fontWeight: 'bold', marginBottom: 6, color: '#1976d2' }}>Sample questions for Gemini AI:</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row' }}>
             {geminiSampleQuestions.map((q: string, idx: number) => (
               <TouchableOpacity
@@ -1142,7 +1171,11 @@ const Build = () => {
             <Text style={styles.saveButtonText}>Ask Gemini AI</Text>
           </TouchableOpacity>
           <AIChatBox visible={showAIChat} onClose={() => setShowAIChat(false)} initialQuestion={aiChatInitial} buildConfig={buildConfig} />
-          <Text style={styles.totalPriceText}>Total Price: ${getTotalPrice().toFixed(2)}</Text>
+          {!isSocketCompatible() && (
+            <Text style={{ color: '#d32f2f', fontWeight: 'bold', marginBottom: 6 }}>
+              ❌ CPU and Motherboard sockets are incompatible. Please adjust before saving.
+            </Text>
+          )}
           <View style={styles.actionButtons}>
             <View>
               {params.editBuildId ? (
@@ -1150,12 +1183,14 @@ const Build = () => {
                   <TouchableOpacity
                     style={[styles.saveButton, styles.updateButton]}
                     onPress={() => handleSaveBuild('update')}
+                    disabled={!isSocketCompatible()}
                   >
                     <Text style={styles.saveButtonTextSmall}>Update Build</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.saveButton, styles.saveAsNewButton]}
                     onPress={() => handleSaveBuild('saveAsNew')}
+                    disabled={!isSocketCompatible()}
                   >
                     <Text style={styles.saveButtonTextSmall}>Save as New Build</Text>
                   </TouchableOpacity>
@@ -1164,27 +1199,12 @@ const Build = () => {
                 <TouchableOpacity
                   style={styles.saveButton}
                   onPress={() => handleSaveBuild('new')}
+                  disabled={!isSocketCompatible()}
                 >
                   <Text style={styles.saveButtonText}>Save Build</Text>
                 </TouchableOpacity>
               )}
               <View style={styles.createPostSection}>
-                <TextInput
-                  style={styles.input}
-                  value={postTitle}
-                  onChangeText={setPostTitle}
-                  placeholder="Enter post title"
-                  placeholderTextColor="#999"
-                />
-                <TextInput
-                  style={[styles.input, styles.descriptionInput]}
-                  value={postDescription}
-                  onChangeText={setPostDescription}
-                  placeholder="Enter post description"
-                  placeholderTextColor="#999"
-                  multiline
-                  numberOfLines={4}
-                />
                 <TouchableOpacity
                   style={[styles.saveButton, styles.createPostButton]}
                   onPress={async () => {
@@ -1192,14 +1212,11 @@ const Build = () => {
                       Alert.alert('Error', 'Please sign in to create a post');
                       return;
                     }
-                    if (!postTitle.trim()) {
-                      Alert.alert('Error', 'Please enter a post title');
-                      return;
-                    }
                     try {
-                      await createPost(user.uid, buildConfig, postTitle, postDescription, userProfile);
-                      setPostTitle('');
-                      setPostDescription('');
+                      // Auto-generate a simple title/description
+                      const title = 'My PC Build';
+                      const description = 'Created from Build Summary';
+                      await createPost(user.uid, buildConfig, title, description, userProfile);
                       Alert.alert('Success', 'Your post has been created!');
                     } catch (error) {
                       let message = 'Failed to create post. Please try again.';
@@ -1383,7 +1400,7 @@ const Build = () => {
                     </View>
                     <View style={styles.partInfo}>
                       <Text style={styles.partName} numberOfLines={2}>{part.name}</Text>
-                      <Text style={styles.partPrice}>${part.price.toFixed(2)}</Text>
+                      <Text style={styles.partPrice}>${(typeof part.price === 'number' ? part.price : Number(part.price) || 0).toFixed(2)}</Text>
                       {renderPartDetails(part, selectedCategory)}
                       {isSelected && (
                         <Text style={styles.selectedLabel}>✓ Selected</Text>
@@ -1671,7 +1688,7 @@ const styles = StyleSheet.create({
   totalPriceText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#000000ff',
     marginBottom: 10,
     letterSpacing: 0.2,
   },
@@ -1855,10 +1872,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   createPostSection: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 10,
+    marginTop: 10,
+    padding: 0,
+    backgroundColor: 'transparent',
+    borderRadius: 0,
   },
   analysisContainer: {
     padding: 15,
@@ -2107,16 +2124,16 @@ function stripHtmlTags(str: string): string {
 }
 
 const geminiSampleQuestions: string[] = [
-  'Cấu hình này có chơi được game AAA không?',
-  'Có nên nâng cấp RAM cho cấu hình này không?',
-  'Cấu hình này phù hợp cho công việc đồ họa không?',
-  'Nguồn máy tính này có đủ công suất không?',
-  'Có linh kiện nào bị nghẽn cổ chai (bottleneck) không?',
-  'Tư vấn nâng cấp CPU hoặc GPU cho cấu hình này?',
-  'Cấu hình này có phù hợp để livestream không?',
-  'Có đề xuất nào để tối ưu hiệu năng/giá thành không?',
-  'Cấu hình này có tương thích tốt với Windows 11 không?',
-  'Tư vấn màn hình phù hợp cho cấu hình này?'
+  'Can this build run AAA games well?',
+  'Should I upgrade the RAM for this build?',
+  'Is this build suitable for graphic design work?',
+  'Is the power supply sufficient for this system?',
+  'Is there any component bottleneck in this build?',
+  'Advice on upgrading CPU or GPU for this build?',
+  'Is this build good for livestreaming?',
+  'Any suggestions to optimize performance/cost?',
+  'Is this build compatible with Windows 11?',
+  'Recommend a suitable monitor for this build.'
 ];
 
 

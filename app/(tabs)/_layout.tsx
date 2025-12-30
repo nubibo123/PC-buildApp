@@ -62,6 +62,14 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="recommended"
+        options={{
+          title: 'Recommended',
+          tabBarIcon: ({ color, size }) => <Ionicons name="star" size={size} color={color} />,
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',

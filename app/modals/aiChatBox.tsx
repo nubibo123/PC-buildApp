@@ -16,7 +16,7 @@ export default function AIChatBox({ visible, onClose, initialQuestion, buildConf
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Gửi câu hỏi mẫu khi mở chat
+  // Send sample question when chat opens
   useEffect(() => {
     if (visible && initialQuestion) {
       handleSendInitialQuestion(initialQuestion);
@@ -31,7 +31,7 @@ export default function AIChatBox({ visible, onClose, initialQuestion, buildConf
     try {
       let content = question;
       if (buildConfig) {
-        content += '\n\nCấu hình PC:\n' + JSON.stringify(buildConfig, null, 2);
+  content += '\n\nPC Build Configuration:\n' + JSON.stringify(buildConfig, null, 2);
       }
       const reply = await chatWithGemini([
         { role: 'user', parts: [content] }
@@ -56,7 +56,7 @@ export default function AIChatBox({ visible, onClose, initialQuestion, buildConf
     try {
       let content = input;
       if (buildConfig) {
-        content += '\n\nCấu hình PC:\n' + JSON.stringify(buildConfig, null, 2);
+  content += '\n\nPC Build Configuration:\n' + JSON.stringify(buildConfig, null, 2);
       }
       const reply = await chatWithGemini([
         ...messages.map(m => ({ role: m.role, parts: [m.text] })),
@@ -71,7 +71,7 @@ export default function AIChatBox({ visible, onClose, initialQuestion, buildConf
     }
   };
 
-  // Hàm loại bỏ các thẻ HTML đơn giản
+  // Strip simple HTML tags
   function stripHtmlTags(str: string): string {
     if (!str) return '';
     return str.replace(/<[^>]+>/g, '');
@@ -115,7 +115,7 @@ export default function AIChatBox({ visible, onClose, initialQuestion, buildConf
             style={styles.input}
             value={input}
             onChangeText={setInput}
-            placeholder="Nhập câu hỏi của bạn..." // Vietnamese placeholder
+            placeholder="Type your question..."
             editable={!loading}
             onSubmitEditing={sendMessage}
             autoCapitalize="sentences"
@@ -126,7 +126,7 @@ export default function AIChatBox({ visible, onClose, initialQuestion, buildConf
             // If you want to force Unicode, you can add maxLength or selectionColor, but React Native TextInput supports Unicode by default
           />
           <TouchableOpacity style={styles.sendBtn} onPress={sendMessage} disabled={loading}>
-            <Text style={styles.sendBtnText}>Gửi</Text>
+            <Text style={styles.sendBtnText}>Send</Text>
           </TouchableOpacity>
         </View>
         <TouchableOpacity style={styles.closeBtn} onPress={onClose}>

@@ -1,4 +1,4 @@
-import { equalTo, get, orderByChild, push, query, ref, set, update } from 'firebase/database';
+import { endAt, equalTo, get, limitToLast, orderByChild, orderByKey, push, query, ref, set, update } from 'firebase/database';
 import { BuildConfiguration } from '../app/(tabs)/build';
 import { auth, database } from './firebase';
 
@@ -51,19 +51,26 @@ export const saveBuild = async (userId: string, buildConfig: BuildConfiguration,
     }
 
     const buildsRef = ref(database, 'builds');
-    const userRef = ref(database, `users/${userId}`);
-    const userSnapshot = await get(userRef);
-    const userProfile = userSnapshot.val();
+    // Prefer the provided userProfile to avoid an extra round-trip; fall back to DB if missing
+    let effectiveUserProfile: UserProfile | null = userProfile || null;
+    if (!effectiveUserProfile) {
+      const userRef = ref(database, `users/${userId}`);
+      const userSnapshot = await get(userRef);
+      effectiveUserProfile = (userSnapshot.val() as UserProfile) || null;
+    }
     
     // Sanitize the build configuration
     const sanitizedConfig = sanitizeBuildConfig(buildConfig);
     const totalPrice = Object.values(sanitizedConfig)
       .filter(part => part !== null)
-      .reduce((sum, part) => sum + (part?.price || 0), 0);
+      .reduce((sum, part) => {
+        const n = typeof (part as any)?.price === 'number' ? (part as any).price : Number((part as any)?.price) || 0;
+        return sum + n;
+      }, 0);
 
     await push(buildsRef, {
       userId,
-      userProfile,
+      userProfile: effectiveUserProfile,
       config: sanitizedConfig,
       totalPrice,
       createdAt: Date.now(),
@@ -95,7 +102,10 @@ export const updateBuild = async (buildId: string, userId: string, buildConfig: 
     const sanitizedConfig = sanitizeBuildConfig(buildConfig);
     const totalPrice = Object.values(sanitizedConfig)
       .filter(part => part !== null)
-      .reduce((sum, part) => sum + (part?.price || 0), 0);
+      .reduce((sum, part) => {
+        const n = typeof (part as any)?.price === 'number' ? (part as any).price : Number((part as any)?.price) || 0;
+        return sum + n;
+      }, 0);
     
     await update(buildRef, {
       config: sanitizedConfig,
@@ -173,18 +183,19 @@ export const getUserBuilds = async (userId: string): Promise<SavedBuild[]> => {
 
     if (!snapshot.exists()) return [];
 
-    const builds: SavedBuild[] = [];
-    for (const [key, value] of Object.entries<any>(snapshot.val())) {
-      const userProfile = await getUserProfile(value.userId);
-      builds.push({
+    const entries = Object.entries<any>(snapshot.val());
+    const builds = await Promise.all(entries.map(async ([key, value]) => {
+      const profile: UserProfile | null = value.userProfile || (await getUserProfile(value.userId));
+      const mapped: SavedBuild = {
         id: key,
         ...value,
-        userProfile,
+        userProfile: profile || undefined,
         comments: value.comments || [],
         userVotes: value.userVotes || {},
         votes: value.votes || 0
-      });
-    }
+      };
+      return mapped;
+    }));
 
     return builds.sort((a, b) => b.createdAt - a.createdAt);
   } catch (error) {
@@ -211,32 +222,81 @@ export const deleteBuild = async (buildId: string, userId: string): Promise<void
 
 export const getAllBuilds = async (): Promise<SavedBuild[]> => {
   try {
-    // Check if user is authenticated
+    // If not authenticated, return empty list to avoid noisy errors during auth init
     if (!auth.currentUser) {
-      throw new Error('User not authenticated');
+      return [];
     }
     
-    const buildsRef = ref(database, 'builds');
-    const snapshot = await get(buildsRef);
+  const buildsRef = ref(database, 'builds');
+  const snapshot = await get(buildsRef);
 
     if (!snapshot.exists()) return [];
 
-    const builds: SavedBuild[] = [];
-    for (const [key, value] of Object.entries<any>(snapshot.val())) {
-      const userProfile = await getUserProfile(value.userId);
-      builds.push({
+    const entries = Object.entries<any>(snapshot.val());
+    const builds = await Promise.all(entries.map(async ([key, value]) => {
+      const profile: UserProfile | null = value.userProfile || (await getUserProfile(value.userId));
+      const mapped: SavedBuild = {
         id: key,
         ...value,
-        userProfile,
+        userProfile: profile || undefined,
         comments: value.comments || [],
         userVotes: value.userVotes || {},
         votes: value.votes || 0
-      });
-    }
+      };
+      return mapped;
+    }));
 
     return builds.sort((a, b) => b.createdAt - a.createdAt);
   } catch (error) {
     console.error('Error getting all builds:', error);
+    throw error;
+  }
+};
+
+// Efficient, paginated fetch of builds ordered by createdAt descending.
+export const getBuildsPage = async (
+  limitCount: number,
+  cursorKey?: string
+): Promise<{ builds: SavedBuild[]; nextCursor?: string; hasMore: boolean }> => {
+  try {
+    if (!auth.currentUser) {
+      return { builds: [], hasMore: false };
+    }
+
+    // Use orderByKey to avoid requiring an index in RTDB rules. Firebase push keys are time-ordered.
+    let q = query(ref(database, 'builds'), orderByKey(), limitToLast(limitCount));
+    if (cursorKey) {
+      // Fetch older items lexicographically (chronologically) before the cursor key
+      q = query(ref(database, 'builds'), orderByKey(), endAt(cursorKey), limitToLast(limitCount));
+    }
+
+    const snapshot = await get(q);
+    if (!snapshot.exists()) return { builds: [], hasMore: false };
+
+    const entries = Object.entries<any>(snapshot.val());
+    // Resolve user profiles in parallel, prefer embedded profile
+    const mapped = await Promise.all(entries.map(async ([key, value]) => {
+      const profile: UserProfile | null = value.userProfile || (await getUserProfile(value.userId));
+      const build: SavedBuild = {
+        id: key,
+        ...value,
+        userProfile: profile || undefined,
+        comments: value.comments || [],
+        userVotes: value.userVotes || {},
+        votes: value.votes || 0,
+      };
+      return build;
+    }));
+
+    // Snapshot with orderByKey + limitToLast returns ascending by key; reverse for newest first
+    const sorted = mapped.sort((a, b) => b.createdAt - a.createdAt);
+    // Determine the oldest key in this page for the next cursor
+    const keysAsc = Object.keys(snapshot.val()).sort();
+    const nextCursor = keysAsc.length ? keysAsc[0] : undefined;
+    const hasMore = sorted.length === limitCount && typeof nextCursor === 'string' && nextCursor.length > 0;
+    return { builds: sorted, nextCursor, hasMore };
+  } catch (error) {
+    console.error('Error getting builds page:', error);
     throw error;
   }
 };

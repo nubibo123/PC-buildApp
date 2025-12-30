@@ -121,8 +121,8 @@ function analyzeCompatibility(config: BuildConfiguration): CompatibilityResult {
     const estimatedPower = estimatePowerConsumption(config);
     const psuWattage = config.powerSupply.wattage;
     
-    if (psuWattage < estimatedPower * 1.2) {
-      issues.push(`Nguồn ${psuWattage}W có thể không đủ cho hệ thống (khuyến nghị: ${Math.ceil(estimatedPower * 1.2)}W)`);
+      if (psuWattage < estimatedPower * 1.2) {
+        issues.push(`The ${psuWattage}W PSU may be insufficient for the system (recommended: ${Math.ceil(estimatedPower * 1.2)}W)`);
       status = 'warning';
     }
   }
@@ -132,8 +132,8 @@ function analyzeCompatibility(config: BuildConfiguration): CompatibilityResult {
     const memoryType = config.memory.name.toLowerCase();
     const motherboardName = config.motherboard.name.toLowerCase();
     
-    if (memoryType.includes('ddr5') && !motherboardName.includes('ddr5')) {
-      issues.push('RAM DDR5 có thể không tương thích với motherboard này');
+      if (memoryType.includes('ddr5') && !motherboardName.includes('ddr5')) {
+        issues.push('DDR5 RAM may not be compatible with this motherboard');
       if (status === 'compatible') status = 'warning';
     }
   }
@@ -145,16 +145,16 @@ function analyzePowerConsumption(config: BuildConfiguration): PowerConsumption {
   const estimated = estimatePowerConsumption(config);
   const recommended = Math.ceil(estimated * 1.3);
   
-  let recommendation = `Khuyến nghị nguồn ${recommended}W hoặc cao hơn`;
+    let recommendation = `Recommended PSU: ${recommended}W or higher`;
   
   if (config.powerSupply) {
     const psuWattage = config.powerSupply.wattage;
     if (psuWattage >= recommended) {
-      recommendation += ` (Nguồn hiện tại ${psuWattage}W - Tốt)`;
+      recommendation += ` (Current PSU ${psuWattage}W - Good)`;
     } else if (psuWattage >= estimated * 1.1) {
-      recommendation += ` (Nguồn hiện tại ${psuWattage}W - Chấp nhận được)`;
+      recommendation += ` (Current PSU ${psuWattage}W - Acceptable)`;
     } else {
-      recommendation += ` (Nguồn hiện tại ${psuWattage}W - Không đủ)`;
+      recommendation += ` (Current PSU ${psuWattage}W - Insufficient)`;
     }
   }
   
@@ -227,30 +227,30 @@ function generateRecommendations(
   
   // Performance recommendations
   if (performance.gaming < 60 && config.videoCard) {
-    recommendations.push('Nâng cấp card đồ họa để cải thiện hiệu năng gaming');
+     recommendations.push('Upgrade the graphics card to improve gaming performance');
   }
   
   if (performance.workstation < 60 && config.cpu) {
-    recommendations.push('Xem xét CPU có nhiều core hơn cho tác vụ workstation');
+     recommendations.push('Consider a CPU with more cores for workstation tasks');
   }
   
   if (!config.memory || config.memory.name.toLowerCase().includes('8gb')) {
-    recommendations.push('Nâng cấp RAM lên 16GB hoặc 32GB để đảm bảo hiệu năng');
+     recommendations.push('Upgrade RAM to 16GB or 32GB to ensure performance');
   }
   
   // Compatibility recommendations
   if (compatibility.status === 'incompatible') {
-    recommendations.push('Kiểm tra lại tương thích giữa các linh kiện');
+     recommendations.push('Re-check compatibility between components');
   }
   
   // Power recommendations
   if (config.powerSupply && estimatePowerConsumption(config) * 1.2 > config.powerSupply.wattage) {
-    recommendations.push('Nâng cấp nguồn để đảm bảo ổn định hệ thống');
+     recommendations.push('Upgrade the power supply to ensure system stability');
   }
   
   // Storage recommendations
   if (!config.internalHardDrive) {
-    recommendations.push('Thêm ổ cứng SSD để cải thiện tốc độ hệ thống');
+     recommendations.push('Add an SSD to improve system speed');
   }
   
   // Balance recommendations
@@ -259,9 +259,9 @@ function generateRecommendations(
     const gpuValue = config.videoCard.price;
     
     if (gpuValue > cpuValue * 2) {
-      recommendations.push('CPU có thể tạo bottleneck cho GPU, xem xét nâng cấp CPU');
+      recommendations.push('The CPU may bottleneck the GPU; consider upgrading the CPU');
     } else if (cpuValue > gpuValue * 2) {
-      recommendations.push('GPU có thể không tận dụng hết sức mạnh của CPU');
+      recommendations.push('The GPU may not fully utilize the CPU capability');
     }
   }
   

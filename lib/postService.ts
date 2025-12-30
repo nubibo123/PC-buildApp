@@ -115,9 +115,9 @@ export const getPostsByUserId = async (userId: string): Promise<Post[]> => {
 };
 
 export const getAllPosts = async (): Promise<Post[]> => {
-  // Check if user is authenticated
+  // If not authenticated (during auth init), return empty list to avoid errors
   if (!auth.currentUser) {
-    throw new Error('User not authenticated');
+    return [];
   }
   
   const postsRef = ref(database, 'posts');

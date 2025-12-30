@@ -1,6 +1,6 @@
 // gemini.ts
 // Gemini API client in TypeScript
-// ⚠️ Đừng commit API key thật lên GitHub
+// ⚠️ Do not commit real API keys to GitHub
 
 const GEMINI_API_KEY: string = 'AIzaSyD-uoZHcLtxm21Y_c8UILInYUYMn54d9zA'; 
 const GEMINI_API_URL: string =
@@ -79,29 +79,29 @@ export async function listGeminiModels(): Promise<any[]> {
 }
 
 /**
- * Gửi cấu hình build lên Gemini để phân tích build.
+ * Send the build configuration to Gemini to analyze the build.
  * @param buildConfig - Build configuration object
- * @param options - { prompt?: string } (tùy chọn prompt bổ sung)
- * @returns string - Phân tích từ Gemini
+ * @param options - { prompt?: string } (optional extra prompt)
+ * @returns string - Analysis from Gemini
  */
 export async function analyzeBuildWithGemini(
   buildConfig: any,
   options?: { prompt?: string }
 ): Promise<string> {
-  // Tạo prompt mặc định
+  // Create default prompt
   let prompt = options?.prompt
     ? options.prompt
-    : 'Phân tích cấu hình PC sau đây, đánh giá điểm mạnh/yếu, hiệu năng chơi game, làm việc, đề xuất nâng cấp nếu cần. Trả lời ngắn gọn, dễ hiểu cho người dùng phổ thông.';
+    : 'Analyze the following PC build: assess strengths/weaknesses, gaming and productivity performance, and suggest upgrades if needed. Keep the answer short and easy to understand for general users.';
 
-  // Định dạng dữ liệu build cho AI
+  // Format build data for AI
   const buildInfo = JSON.stringify(buildConfig, null, 2);
 
-  // Gửi lên Gemini
+  // Send to Gemini
   const messages: GeminiMessage[] = [
     {
       role: 'user', // Explicitly type as 'user'
       parts: [
-        `${prompt}\n\nCấu hình:\n${buildInfo}`
+        `${prompt}\n\nBuild configuration:\n${buildInfo}`
       ]
     }
   ];

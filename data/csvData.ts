@@ -117,7 +117,7 @@ const mapMemoryData = (item: any): Memory => ({
   speed: item.speed || '',
   modules: item.modules || '',
   cas_latency: Number(item.cas_latency) || 0,
-  image_link: processImageLink(item.link_image),
+  image_link: processImageLink(item.link_image || item.image_link),
 });
 
 const mapMotherboardData = (item: any): Motherboard => ({
@@ -126,7 +126,7 @@ const mapMotherboardData = (item: any): Motherboard => ({
   socket: item.socket || '',
   form_factor: item.form_factor || '',
   max_memory: Number(item.max_memory) || 0,
-  image_link: processImageLink(item.link_image),
+  image_link: processImageLink(item.link_image || item.image_link),
 });
 
 const mapVideoCardData = (item: any): VideoCard => ({
@@ -135,7 +135,7 @@ const mapVideoCardData = (item: any): VideoCard => ({
   chipset: item.chipset || '',
   memory: Number(item.memory) || 0,
   core_clock: Number(item.core_clock) || 0,
-  image_link: processImageLink(item.link_image),
+  image_link: processImageLink(item.link_image || item.image_link),
 });
 
 const mapCaseData = (item: any): Case => ({
@@ -145,7 +145,7 @@ const mapCaseData = (item: any): Case => ({
   color: item.color || '',
   psu: item.psu || '',
   side_panel: item.side_panel || '',
-  image_link: processImageLink(item.image_link),
+  image_link: processImageLink(item.image_link || item.link_image),
 });
 
 const mapPowerSupplyData = (item: any): PowerSupply => ({
@@ -172,12 +172,14 @@ const mapInternalHardDriveData = (item: any): InternalHardDrive => ({
 const mapMonitorData = (item: any): Monitor => ({
   name: item.name || '',
   price: Number(item.price) || 0,
-  resolution: item.resolution || '',
-  size: item.size || '',
+  resolution: Array.isArray(item.resolution)
+    ? String(item.resolution)
+    : (typeof item.resolution === 'string' ? item.resolution.replace(/\s+/g, '').replace(',', 'x') : ''),
+  size: String(item.screen_size || item.size || ''),
   refresh_rate: Number(item.refresh_rate) || 0,
-  response_time: item.response_time || '',
+  response_time: String(item.response_time || ''),
   panel_type: item.panel_type || '',
-  image_link: processImageLink(item.link_image),
+  image_link: processImageLink(item.link_image || item.image_link),
 });
 
 export const loadCPUData = async (searchQuery?: string): Promise<CPU[]> => {
@@ -199,7 +201,8 @@ export const loadCPUData = async (searchQuery?: string): Promise<CPU[]> => {
       );
     }
 
-    return items.map(mapCPUData);
+  const list = items.map(mapCPUData).filter((x: CPU) => typeof x.price === 'number' && isFinite(x.price) && x.price > 0);
+  return list;
   } catch (error) {
     console.error('Error loading CPU data:', error);
     throw error;
@@ -225,7 +228,8 @@ export const loadMemoryData = async (searchQuery?: string): Promise<Memory[]> =>
       );
     }
 
-    return items.map(mapMemoryData);
+  const list = items.map(mapMemoryData).filter((x: Memory) => typeof x.price === 'number' && isFinite(x.price) && x.price > 0);
+  return list;
   } catch (error) {
     console.error('Error loading Memory data:', error);
     throw error;
@@ -251,7 +255,8 @@ export const loadMotherboardData = async (searchQuery?: string): Promise<Motherb
       );
     }
 
-    return items.map(mapMotherboardData);
+  const list = items.map(mapMotherboardData).filter((x: Motherboard) => typeof x.price === 'number' && isFinite(x.price) && x.price > 0);
+  return list;
   } catch (error) {
     console.error('Error loading Motherboard data:', error);
     throw error;
@@ -276,7 +281,8 @@ export const loadVideoCardData = async (searchQuery?: string): Promise<VideoCard
       );
     }
 
-    return items.map(mapVideoCardData);
+  const list = items.map(mapVideoCardData).filter((x: VideoCard) => typeof x.price === 'number' && isFinite(x.price) && x.price > 0);
+  return list;
   } catch (error) {
     console.error('Error loading Video Card data:', error);
     throw error;
@@ -301,7 +307,8 @@ export const loadCaseData = async (searchQuery?: string): Promise<Case[]> => {
       );
     }
 
-    return items.map(mapCaseData);
+  const list = items.map(mapCaseData).filter((x: Case) => typeof x.price === 'number' && isFinite(x.price) && x.price > 0);
+  return list;
   } catch (error) {
     console.error('Error loading Case data:', error);
     throw error;
@@ -326,7 +333,8 @@ export const loadPowerSupplyData = async (searchQuery?: string): Promise<PowerSu
       );
     }
 
-    return items.map(mapPowerSupplyData);
+  const list = items.map(mapPowerSupplyData).filter((x: PowerSupply) => typeof x.price === 'number' && isFinite(x.price) && x.price > 0);
+  return list;
   } catch (error) {
     console.error('Error loading Power Supply data:', error);
     throw error;
@@ -351,7 +359,8 @@ export const loadInternalHardDriveData = async (searchQuery?: string): Promise<I
       );
     }
 
-    return items.map(mapInternalHardDriveData);
+  const list = items.map(mapInternalHardDriveData).filter((x: InternalHardDrive) => typeof x.price === 'number' && isFinite(x.price) && x.price > 0);
+  return list;
   } catch (error) {
     console.error('Error loading Internal Hard Drive data:', error);
     throw error;
@@ -376,7 +385,8 @@ export const loadMonitorData = async (searchQuery?: string): Promise<Monitor[]> 
       );
     }
 
-    return items.map(mapMonitorData);
+  const list = items.map(mapMonitorData).filter((x: Monitor) => typeof x.price === 'number' && isFinite(x.price) && x.price > 0);
+  return list;
   } catch (error) {
     console.error('Error loading Monitor data:', error);
     throw error;

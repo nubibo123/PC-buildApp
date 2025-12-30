@@ -2,33 +2,33 @@ import { useAuth } from '@/lib/AuthContext';
 import { Redirect, Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    FlatList,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import {
-  CPU,
-  Case,
-  InternalHardDrive,
-  Memory,
-  Monitor,
-  Motherboard,
-  PowerSupply,
-  VideoCard,
-  loadCPUData,
-  loadCaseData,
-  loadInternalHardDriveData,
-  loadMemoryData,
-  loadMonitorData,
-  loadMotherboardData,
-  loadPowerSupplyData,
-  loadVideoCardData,
+    CPU,
+    Case,
+    InternalHardDrive,
+    Memory,
+    Monitor,
+    Motherboard,
+    PowerSupply,
+    VideoCard,
+    loadCPUData,
+    loadCaseData,
+    loadInternalHardDriveData,
+    loadMemoryData,
+    loadMonitorData,
+    loadMotherboardData,
+    loadPowerSupplyData,
+    loadVideoCardData,
 } from '../../data/csvData';
 
 type PartData = CPU | Memory | Motherboard | VideoCard | Case | PowerSupply | InternalHardDrive | Monitor;
@@ -588,7 +588,7 @@ const PCParts = () => {
         </View>
         <View style={styles.partInfo}>
           <Text style={styles.partName} numberOfLines={2}>{part.name}</Text>
-          <Text style={styles.partPrice}>${part.price.toFixed(2)}</Text>
+          <Text style={styles.partPrice}>${(typeof part.price === 'number' ? part.price : Number(part.price) || 0).toFixed(2)}</Text>
           {renderPartDetails(part)}
         </View>
       </View>

@@ -1,16 +1,17 @@
 import { useAuth } from "@/lib/AuthContext";
-import { addComment as addBuildComment, getAllBuilds, SavedBuild, toggleVote as toggleBuildVote } from '@/lib/buildService';
+import { addComment as addBuildComment, getBuildsPage, SavedBuild, toggleVote as toggleBuildVote } from '@/lib/buildService';
 import { addComment as addPostComment, getAllPosts, getPostComments, Post, toggleVote as togglePostVote } from '@/lib/postService';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Input, Layout, Modal, Text } from '@ui-kitten/components';
-import { Redirect } from "expo-router";
-import { useEffect, useState } from 'react';
+import { Redirect, useRouter } from "expo-router";
+import { useState } from 'react';
 import { FlatList, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
 export default function HomeScreen() {
   const { user, isLoading } = useAuth();
+  const router = useRouter();
   
   // Redirect to login if user is not authenticated
   if (!user) {
@@ -33,12 +34,30 @@ export default function HomeScreen() {
   const [comment, setComment] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [showPosts, setShowPosts] = useState(false);
+  const [loadingBuilds, setLoadingBuilds] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | undefined>(undefined);
+  const [hasMoreBuilds, setHasMoreBuilds] = useState(true);
   const [postComponents, setPostComponents] = useState<{ [postId: string]: any[] }>({});
   const [loadingComponents, setLoadingComponents] = useState<{ [postId: string]: boolean }>({});
   const [expandedComponentsPost, setExpandedComponentsPost] = useState<string | null>(null);
   const [detailPost, setDetailPost] = useState<Post | null>(null);
   const [detailComponents, setDetailComponents] = useState<any[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
+  // Recommended builds are handled on a separate hidden tab now
+
+  // Recommendation suggestion UI moved to /recommended tab
+
+  const navigateToBuildWithConfig = (config: any) => {
+    try {
+      router.push({ pathname: '/(tabs)/build', params: { initialConfig: JSON.stringify(config) } });
+    } catch (e) {
+      console.error('Failed to navigate with config', e);
+    }
+  };
+
+  
+
+  const PAGE_SIZE = 10;
 
   const fetchBuilds = async () => {
     // Chỉ fetch khi user đã authenticated và có uid
@@ -48,10 +67,34 @@ export default function HomeScreen() {
     }
     
     try {
-      const allBuilds = await getAllBuilds();
-      setBuilds(allBuilds);
+      setLoadingBuilds(true);
+      const { builds: firstPage, nextCursor, hasMore } = await getBuildsPage(PAGE_SIZE);
+      setBuilds(firstPage);
+      setNextCursor(nextCursor);
+      setHasMoreBuilds(hasMore);
     } catch (error) {
       console.error('Error fetching all builds:', error);
+    } finally {
+      setLoadingBuilds(false);
+    }
+  };
+
+  const loadMoreBuilds = async () => {
+    if (loadingBuilds || !hasMoreBuilds || !user || !user.uid) return;
+    try {
+      setLoadingBuilds(true);
+      const { builds: page, nextCursor: nc, hasMore } = await getBuildsPage(PAGE_SIZE, nextCursor);
+      setBuilds(prev => {
+        const ids = new Set(prev.map(b => b.id));
+        const merged = [...prev, ...page.filter(b => !ids.has(b.id))];
+        return merged;
+      });
+      setNextCursor(nc);
+      setHasMoreBuilds(hasMore);
+    } catch (e) {
+      console.error('Error loading more builds:', e);
+    } finally {
+      setLoadingBuilds(false);
     }
   };
 
@@ -91,18 +134,7 @@ export default function HomeScreen() {
     }, [user, user?.uid, isLoading])
   );
 
-  useEffect(() => {
-    const initializeData = async () => {
-      if (user && user.uid && !isLoading) {
-        // Small delay to ensure Firebase auth is fully initialized
-        await new Promise(resolve => setTimeout(resolve, 100));
-        fetchBuilds();
-        fetchPosts();
-      }
-    };
-    
-    initializeData();
-  }, [user, user?.uid, isLoading]);
+  // Avoid duplicate initial loads; useFocusEffect above handles initial and on focus
 
   const handleRefresh = async () => {
     if (!user || !user.uid) {
@@ -120,7 +152,15 @@ export default function HomeScreen() {
     try {
       await addBuildComment(buildId, user.uid, user.email || '', comment.trim());
       setComment('');
-      await fetchBuilds();
+      // Optimistic update to avoid refetching all builds
+      const newComment = {
+        id: Math.random().toString(36).slice(2),
+        userId: user.uid,
+        userEmail: user.email || '',
+        content: comment.trim(),
+        createdAt: Date.now(),
+      };
+      setBuilds(prev => prev.map(b => b.id === buildId ? { ...b, comments: [newComment, ...(b.comments || [])] } : b));
     } catch (error) {
       console.error('Error adding comment:', error);
     }
@@ -130,7 +170,15 @@ export default function HomeScreen() {
     if (!user) return;
     try {
       await toggleBuildVote(buildId, user.uid);
-      await fetchBuilds();
+      // Optimistic update local state
+      setBuilds(prev => prev.map(b => {
+        if (b.id !== buildId) return b;
+        const userVotes = { ...(b.userVotes || {}) } as Record<string, boolean>;
+        const hadVoted = !!userVotes[user.uid];
+        userVotes[user.uid] = !hadVoted;
+        const votes = (b.votes || 0) + (hadVoted ? -1 : 1);
+        return { ...b, userVotes, votes };
+      }));
     } catch (error) {
       console.error('Error toggling vote:', error);
     }
@@ -294,6 +342,10 @@ export default function HomeScreen() {
   };
 
   const renderBuildItem = ({ item }: { item: SavedBuild }) => {
+    const toNum = (v: any) => {
+      const n = typeof v === 'number' ? v : Number(v);
+      return isFinite(n) && !isNaN(n) ? n : 0;
+    };
     const isExpanded = selectedBuild === item.id;
     const hasVoted = item.userVotes?.[user.uid] || false;
     const defaultAvatar = require('../../assets/images/default-avatar.png');
@@ -308,7 +360,7 @@ export default function HomeScreen() {
             />
             <View style={styles.buildInfo}>
               <Text category="h6">{item.userProfile?.displayName || item.userProfile?.email || 'Anonymous User'}</Text>
-              <Text category="s1">Total: ${item.totalPrice.toFixed(2)}</Text>
+              <Text category="s1">Total: ${toNum(item.totalPrice).toFixed(2)}</Text>
               <Text category="s2">{new Date(item.createdAt).toLocaleDateString()}</Text>
             </View>
           </View>
@@ -342,28 +394,28 @@ export default function HomeScreen() {
               <View style={styles.componentItem}>
                 <Text category="s1">CPU: {item.config.cpu.name}</Text>
                 {renderComponentImage(item.config.cpu.link_image)}
-                <Text>Price: ${item.config.cpu.price}</Text>
+                <Text>Price: ${toNum(item.config.cpu.price).toFixed(2)}</Text>
               </View>
             )}
             {item.config.motherboard && (
               <View style={styles.componentItem}>
                 <Text category="s1">Motherboard: {item.config.motherboard.name}</Text>
                 {renderComponentImage(item.config.motherboard.image_link)}
-                <Text>Price: ${item.config.motherboard.price}</Text>
+                <Text>Price: ${toNum(item.config.motherboard.price).toFixed(2)}</Text>
               </View>
             )}
             {item.config.memory && (
               <View style={styles.componentItem}>
                 <Text category="s1">Memory: {item.config.memory.name}</Text>
                 {renderComponentImage(item.config.memory.image_link)}
-                <Text>Price: ${item.config.memory.price}</Text>
+                <Text>Price: ${toNum(item.config.memory.price).toFixed(2)}</Text>
               </View>
             )}
             {item.config.videoCard && (
               <View style={styles.componentItem}>
                 <Text category="s1">Video Card: {item.config.videoCard.name}</Text>
                 {renderComponentImage(item.config.videoCard.image_link)}
-                <Text>Price: ${item.config.videoCard.price}</Text>
+                <Text>Price: ${toNum(item.config.videoCard.price).toFixed(2)}</Text>
               </View>
             )}
 
@@ -371,7 +423,7 @@ export default function HomeScreen() {
               <View style={styles.componentItem}>
                 <Text category="s1">Case: {item.config.case.name}</Text>
                 {renderComponentImage(item.config.case.image_link)}
-                <Text>Price: ${item.config.case.price}</Text>
+                <Text>Price: ${toNum(item.config.case.price).toFixed(2)}</Text>
               </View>
             )}
 
@@ -379,7 +431,7 @@ export default function HomeScreen() {
               <View style={styles.componentItem}>
                 <Text category="s1">Power Supply: {item.config.powerSupply.name}</Text>
                 {renderComponentImage(item.config.powerSupply.image_link)}
-                <Text>Price: ${item.config.powerSupply.price}</Text>
+                <Text>Price: ${toNum(item.config.powerSupply.price).toFixed(2)}</Text>
               </View>
             )}
 
@@ -387,7 +439,7 @@ export default function HomeScreen() {
               <View style={styles.componentItem}>
                 <Text category="s1">Internal Hard Drive: {item.config.internalHardDrive.name}</Text>
                 {renderComponentImage(item.config.internalHardDrive.image_link)}
-                <Text>Price: ${item.config.internalHardDrive.price}</Text>
+                <Text>Price: ${toNum(item.config.internalHardDrive.price).toFixed(2)}</Text>
               </View>
             )}
 
@@ -395,7 +447,7 @@ export default function HomeScreen() {
               <View style={styles.componentItem}>
                 <Text category="s1">Monitor: {item.config.monitor.name}</Text>
                 {renderComponentImage(item.config.monitor.image_link)}
-                <Text>Price: ${item.config.monitor.price}</Text>
+                <Text>Price: ${toNum(item.config.monitor.price).toFixed(2)}</Text>
               </View>
             )}
 
@@ -441,6 +493,45 @@ export default function HomeScreen() {
     <Layout style={styles.container}>
       <Text category="h4" style={styles.title}>🏠 Home</Text>
       <Text style={styles.welcome}>Welcome {user.email}</Text>
+
+  {/* Recommended builds */}
+      <View style={styles.suggestContainer}>
+        <Text style={styles.suggestTitle}>Recommended builds by use case</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestScroll}>
+          <TouchableOpacity
+            style={[styles.suggestCard, { backgroundColor: '#e3f2fd' }]}
+            onPress={() => router.push({ pathname: '/(tabs)/recommended', params: { preset: 'gaming' } })}
+          >
+            <Ionicons name="game-controller" size={22} color="#1976d2" />
+            <Text style={styles.suggestLabel}>Gaming</Text>
+            <Text style={styles.suggestDesc}>High performance, smooth FPS</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.suggestCard, { backgroundColor: '#e8f5e9' }]}
+            onPress={() => router.push({ pathname: '/(tabs)/recommended', params: { preset: 'office' } })}
+          >
+            <Ionicons name="briefcase" size={22} color="#2e7d32" />
+            <Text style={styles.suggestLabel}>Office</Text>
+            <Text style={styles.suggestDesc}>Stable and cost‑effective</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.suggestCard, { backgroundColor: '#fff3e0' }]}
+            onPress={() => router.push({ pathname: '/(tabs)/recommended', params: { preset: 'creator' } })}
+          >
+            <Ionicons name="color-palette" size={22} color="#ef6c00" />
+            <Text style={styles.suggestLabel}>Creator</Text>
+            <Text style={styles.suggestDesc}>Smooth rendering and editing</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.suggestCard, { backgroundColor: '#f3e5f5' }]}
+            onPress={() => router.push({ pathname: '/(tabs)/recommended', params: { preset: 'budget' } })}
+          >
+            <Ionicons name="wallet" size={22} color="#6a1b9a" />
+            <Text style={styles.suggestLabel}>Budget</Text>
+            <Text style={styles.suggestDesc}>Affordable and reliable</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
       
       <View style={styles.toggleContainer}>
         <TouchableOpacity
@@ -474,8 +565,17 @@ export default function HomeScreen() {
           style={styles.buildList}
           refreshing={refreshing}
           onRefresh={handleRefresh}
+          onEndReached={loadMoreBuilds}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={loadingBuilds && hasMoreBuilds ? (
+            <View style={{ padding: 12, alignItems: 'center' }}>
+              <Text appearance="hint">Loading more...</Text>
+            </View>
+          ) : null}
         />
       )}
+
+      {/* Recommended list moved to a dedicated hidden tab at /(tabs)/recommended */}
 
       {/* Modal chi tiết bài đăng */}
       <Modal
@@ -548,13 +648,16 @@ export default function HomeScreen() {
                           {comp.name}
                         </Text>
                       </View>
-                      <Text style={{ color: '#4CAF50', fontWeight: 'bold', marginLeft: 8 }} numberOfLines={1} ellipsizeMode="tail">${comp.price}</Text>
+                      <Text style={{ color: '#4CAF50', fontWeight: 'bold', marginLeft: 8 }} numberOfLines={1} ellipsizeMode="tail">${(typeof comp.price === 'number' ? comp.price : Number(comp.price) || 0).toFixed(2)}</Text>
                     </View>
                   ))}
                   <View style={{ borderTopWidth: 1, borderTopColor: '#eee', marginTop: 8, paddingTop: 6, flexDirection: 'row', justifyContent: 'space-between' }}>
                     <Text style={{ fontWeight: 'bold' }}>Total:</Text>
                     <Text style={{ fontWeight: 'bold', color: '#1976d2' }}>
-                      ${detailComponents.reduce((sum, c) => sum + (c.price || 0), 0)}
+                      ${detailComponents.reduce((sum, c) => {
+                        const n = typeof c.price === 'number' ? c.price : Number(c.price) || 0;
+                        return sum + n;
+                      }, 0).toFixed(2)}
                     </Text>
                   </View>
                 </View>
@@ -612,6 +715,70 @@ const styles = StyleSheet.create({
     padding: 0,
     paddingTop: 50,
     backgroundColor: '#f4f6fb',
+  },
+  suggestContainer: {
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  suggestTitle: {
+    marginLeft: 16,
+    marginBottom: 8,
+    fontWeight: 'bold',
+    color: '#1976d2',
+  },
+  suggestScroll: {
+    paddingHorizontal: 12,
+  },
+  suggestCard: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    marginHorizontal: 4,
+    minWidth: 140,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  suggestLabel: {
+    fontWeight: 'bold',
+    marginTop: 6,
+  },
+  suggestDesc: {
+    color: '#666',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  suggestBuildCard: {
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  suggestBuildHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  suggestBuildTotal: {
+    color: '#1976d2',
+    fontWeight: 'bold',
+  },
+  suggestBuildRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  suggestBuildKey: {
+    width: 110,
+    color: '#607d8b',
+    fontWeight: '600',
+  },
+  suggestBuildVal: {
+    flex: 1,
   },
   title: {
     textAlign: 'center',
